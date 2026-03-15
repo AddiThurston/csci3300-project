@@ -1,4 +1,4 @@
-window.handleCredentialResponse = function(response) {
+window.signinWithGoogle = function(response) {
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
   const user = {
     email: payload.email,
@@ -8,6 +8,7 @@ window.handleCredentialResponse = function(response) {
   };
   sessionStorage.setItem('user', JSON.stringify(user));
   sessionStorage.setItem('credential', response.credential);
+  console.log(user)
   // Redirect or update UI as needed
-  window.location.href = 'index.html';
+  //window.location.href = 'login.html';
 };
