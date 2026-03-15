@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InSiteful Mind</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="app.js"></script>
+</head>
+
+<body>
+    <main class="container login-grid">
+        <section class="login-logo">
+            <p>InSiteful Mind</p>
+        </section>
+        <section class="login-card">
+            <h1>Welcome!</h1>
+            <p class="login-subtitle">Sign in with Google to continue.</p>
+            <div id="g_id_onload"
+                 data-client_id="367361204794-1s7mqntr4fq14l0i8thpn7t7gb3gb08s.apps.googleusercontent.com"
+                 data-auto_prompt="false"
+                 data-callback="handleCredentialResponse">
+            </div>
+            <div class="g_id_signin"
+                 data-shape="pill"
+                 data-width="320">
+            </div>
+        </section>
+    </main>
+</body>

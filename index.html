@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InSiteful Mind</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <header class="top-bar">
+        <div class="insite-logo"> InSiteful Mind </div>
+        <nav class="wrap row">
+            <a href="index.html">
+                <button class="main-button"> Journal </button>
+            </a>
+            <a href="index.html">
+                <button class="main-button"> Trends </button>
+            </a>
+            <a href="index.html">
+                <button class="main-button"> Check-In </button>
+            </a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <form id="login-form">
+            User name: <input name="username" />
+            <br />
+            Password: <input name="password" type="password" />
+            <br />
+            <button type="submit">Login</button>
+        </form>
+        <script>
+            document.getElementById("login-form").addEventListener("submit", event => {
+                event.preventDefault();
+                const form = event.target;
+                if ((form.username.value === "johndoe") && (form.password.value === "secret")) {
+                    location.href = "main.html";
+                } else {
+                    alert("Invalid user name and/or password!");
+                }
+            });
+        </script>
+    </main>
+</body>
