@@ -7,6 +7,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+        .notepad{
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            padding: 60px;
+            resize: none;
+            font-size: 16px;
+            border: 2px solid black;
+            text-align: center;
+        }
+        .Journal-notepad{
+            width: 300px;
+            margin: auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 100px;
+        }
+    </style>
 </head>
 
 <body>
@@ -25,7 +46,9 @@
         </nav>
     </header>
 
-    <main class="container">
-        <H1>This is the journal page</H1>
+    <main class="Journal-notepad">
+        <H1>Journal</H1>
+        <p>How are you feeling today?</p>
+        <textarea class="notepad" placeholder="Write your thoughts here."></textarea>
     </main>
 </body>
