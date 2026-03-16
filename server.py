@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 import time
@@ -16,19 +15,9 @@ redis = Redis(
 )
 
 
-def get_user_sub():
-    """Decode the Google JWT from the Authorization header and return the user's sub."""
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        return None
-    try:
-        token = auth.split(" ")[1]
-        segment = token.split(".")[1]
-        segment += "=" * (4 - len(segment) % 4)  # fix base64 padding
-        payload = json.loads(base64.b64decode(segment))
-        return payload.get("sub")
-    except Exception:
-        return None
+def get_username():
+    """Get the username from the X-Username header."""
+    return request.headers.get("X-Username", "").strip() or None
 
 
 # Serve HTML files
@@ -38,14 +27,14 @@ def static_files(filename="index.html"):
     return send_from_directory(".", filename)
 
 
-# GET /api/entries — fetch all journal entries for the logged-in user
+# GET /api/entries — fetch all journal entries for a user
 @app.get("/api/entries")
 def get_entries():
-    sub = get_user_sub()
-    if not sub:
-        return jsonify({"error": "Unauthorized"}), 401
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
 
-    data = redis.hgetall(f"journal:{sub}")
+    data = redis.hgetall(f"journal:{username}")
     if not data:
         return jsonify([])
 
@@ -57,9 +46,9 @@ def get_entries():
 # POST /api/entries — save a new journal entry
 @app.post("/api/entries")
 def create_entry():
-    sub = get_user_sub()
-    if not sub:
-        return jsonify({"error": "Unauthorized"}), 401
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
 
     body = request.get_json()
     content = (body or {}).get("content", "").strip()
@@ -73,18 +62,18 @@ def create_entry():
         "timestamp": int(time.time() * 1000),
     }
 
-    redis.hset(f"journal:{sub}", entry["id"], json.dumps(entry))
+    redis.hset(f"journal:{username}", entry["id"], json.dumps(entry))
     return jsonify(entry), 201
 
 
 # DELETE /api/entries/<id> — delete a journal entry
 @app.delete("/api/entries/<entry_id>")
 def delete_entry(entry_id):
-    sub = get_user_sub()
-    if not sub:
-        return jsonify({"error": "Unauthorized"}), 401
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
 
-    redis.hdel(f"journal:{sub}", entry_id)
+    redis.hdel(f"journal:{username}", entry_id)
     return jsonify({"success": True})
 
 

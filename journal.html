@@ -119,6 +119,53 @@
             padding: 40px 0;
         }
 
+        /* Username prompt overlay */
+        .username-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 27, 42, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .username-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 32px 28px;
+            width: min(380px, 90vw);
+            box-shadow: 0 16px 40px rgba(13, 27, 42, 0.15);
+            text-align: center;
+        }
+
+        .username-card h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+        }
+
+        .username-card p {
+            color: var(--muted);
+            font-size: 14px;
+            margin: 0 0 20px;
+        }
+
+        .username-card input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+        }
+
+        .username-card input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
         @media (max-width: 640px) {
             .journal-layout {
                 grid-template-columns: 1fr;
@@ -128,6 +175,16 @@
 </head>
 
 <body>
+    <!-- Username prompt -->
+    <div class="username-overlay" id="username-overlay">
+        <div class="username-card">
+            <h2>Welcome</h2>
+            <p>Enter a username to access your journal.</p>
+            <input type="text" id="username-input" placeholder="Username" />
+            <button class="main-button" onclick="setUsername()" style="width:100%;">Continue</button>
+        </div>
+    </div>
+
     <header class="top-bar">
         <div class="insite-logo"> InSiteful Mind </div>
         <nav class="wrap row">
@@ -164,17 +221,32 @@
     </main>
 
     <script>
-        // Redirect to login if not authenticated
-        const user = JSON.parse(sessionStorage.getItem('user') || 'null');
-        const credential = sessionStorage.getItem('credential');
-        if (!user || !credential) {
-            window.location.href = 'login.html';
+        let currentUsername = localStorage.getItem('username');
+
+        // Show or hide the username prompt
+        if (currentUsername) {
+            document.getElementById('username-overlay').style.display = 'none';
+            loadEntries();
+        }
+
+        // Press Enter to submit username
+        document.getElementById('username-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') setUsername();
+        });
+
+        function setUsername() {
+            const val = document.getElementById('username-input').value.trim();
+            if (!val) return;
+            currentUsername = val;
+            localStorage.setItem('username', val);
+            document.getElementById('username-overlay').style.display = 'none';
+            loadEntries();
         }
 
         function authHeaders() {
             return {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${credential}`,
+                'X-Username': currentUsername,
             };
         }
 
@@ -183,6 +255,10 @@
                 month: 'short', day: 'numeric', year: 'numeric',
                 hour: '2-digit', minute: '2-digit',
             });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         function renderEntries(entries) {
@@ -205,16 +281,12 @@
             `).join('');
         }
 
-        function escapeHtml(str) {
-            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-
         async function loadEntries() {
             try {
                 const res = await fetch('/api/entries', { headers: authHeaders() });
                 const entries = await res.json();
                 renderEntries(entries);
-            } catch (err) {
+            } catch {
                 document.getElementById('entries-list').innerHTML =
                     '<p class="empty-state">Failed to load entries.</p>';
             }
@@ -254,8 +326,6 @@
                     '<p class="empty-state">No entries yet. Write your first one!</p>';
             }
         }
-
-        loadEntries();
     </script>
 </body>
 
