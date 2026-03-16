@@ -7,9 +7,184 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+        .journal-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+            align-items: start;
+            width: 100%;
+            max-width: 960px;
+            padding: 32px 20px;
+        }
+
+        .entry-form {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(13, 27, 42, 0.06);
+        }
+
+        .entry-form h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .entry-form input,
+        .entry-form textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #0d1b2a;
+            background: #f5f7fb;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+            resize: vertical;
+        }
+
+        .entry-form textarea {
+            min-height: 140px;
+        }
+
+        .entry-form input:focus,
+        .entry-form textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .entries-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .entry-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 22px;
+            box-shadow: 0 2px 8px rgba(13, 27, 42, 0.05);
+        }
+
+        .entry-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .entry-card h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .entry-date {
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+
+        .entry-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2c3e50;
+            white-space: pre-wrap;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 18px;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .delete-btn:hover {
+            color: var(--danger);
+        }
+
+        .empty-state {
+            color: var(--muted);
+            font-size: 14px;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        /* Username prompt overlay */
+        .username-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 27, 42, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .username-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 32px 28px;
+            width: min(380px, 90vw);
+            box-shadow: 0 16px 40px rgba(13, 27, 42, 0.15);
+            text-align: center;
+        }
+
+        .username-card h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+        }
+
+        .username-card p {
+            color: var(--muted);
+            font-size: 14px;
+            margin: 0 0 20px;
+        }
+
+        .username-card input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+        }
+
+        .username-card input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 640px) {
+            .journal-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Username prompt -->
+    <div class="username-overlay" id="username-overlay">
+        <div class="username-card">
+            <h2>Welcome</h2>
+            <p>Enter a username to access your journal.</p>
+            <input type="text" id="username-input" placeholder="Username" />
+            <button class="main-button" onclick="setUsername()" style="width:100%;">Continue</button>
+        </div>
+    </div>
+
     <header class="top-bar">
         <div class="insite-logo"> InSiteful Mind </div>
         <nav class="wrap row">
@@ -25,7 +200,133 @@
         </nav>
     </header>
 
-    <main class="container">
-        <H1>This is the journal page</H1>
+    <main class="container" style="align-items: flex-start; justify-content: center;">
+        <div class="journal-layout">
+            <!-- New Entry Form -->
+            <div class="entry-form">
+                <h2>New Entry</h2>
+                <input type="text" id="entry-title" placeholder="Title (optional)" />
+                <textarea id="entry-content" placeholder="What's on your mind?"></textarea>
+                <button class="main-button" id="save-btn" onclick="saveEntry()" style="width:100%;">Save Entry</button>
+            </div>
+
+            <!-- Past Entries -->
+            <div>
+                <h2 style="margin: 0 0 16px; font-size: 18px;">Past Entries</h2>
+                <div class="entries-list" id="entries-list">
+                    <p class="empty-state">Loading entries...</p>
+                </div>
+            </div>
+        </div>
     </main>
+
+    <script>
+        let currentUsername = localStorage.getItem('username');
+
+        // Show or hide the username prompt
+        if (currentUsername) {
+            document.getElementById('username-overlay').style.display = 'none';
+            loadEntries();
+        }
+
+        // Press Enter to submit username
+        document.getElementById('username-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') setUsername();
+        });
+
+        function setUsername() {
+            const val = document.getElementById('username-input').value.trim();
+            if (!val) return;
+            currentUsername = val;
+            localStorage.setItem('username', val);
+            document.getElementById('username-overlay').style.display = 'none';
+            loadEntries();
+        }
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'X-Username': currentUsername,
+            };
+        }
+
+        function formatDate(timestamp) {
+            return new Date(timestamp).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function renderEntries(entries) {
+            const list = document.getElementById('entries-list');
+            if (entries.length === 0) {
+                list.innerHTML = '<p class="empty-state">No entries yet. Write your first one!</p>';
+                return;
+            }
+            list.innerHTML = entries.map(entry => `
+                <div class="entry-card" id="entry-${entry.id}">
+                    <div class="entry-card-header">
+                        <h3>${escapeHtml(entry.title)}</h3>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <span class="entry-date">${formatDate(entry.timestamp)}</span>
+                            <button class="delete-btn" onclick="deleteEntry('${entry.id}')" title="Delete">&#x2715;</button>
+                        </div>
+                    </div>
+                    <p class="entry-content">${escapeHtml(entry.content)}</p>
+                </div>
+            `).join('');
+        }
+
+        async function loadEntries() {
+            try {
+                const res = await fetch('/api/entries', { headers: authHeaders() });
+                const entries = await res.json();
+                renderEntries(entries);
+            } catch {
+                document.getElementById('entries-list').innerHTML =
+                    '<p class="empty-state">Failed to load entries.</p>';
+            }
+        }
+
+        async function saveEntry() {
+            const title = document.getElementById('entry-title').value.trim();
+            const content = document.getElementById('entry-content').value.trim();
+            if (!content) return;
+
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const res = await fetch('/api/entries', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ title, content }),
+                });
+                if (res.ok) {
+                    document.getElementById('entry-title').value = '';
+                    document.getElementById('entry-content').value = '';
+                    await loadEntries();
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Entry';
+            }
+        }
+
+        async function deleteEntry(id) {
+            await fetch(`/api/entries/${id}`, { method: 'DELETE', headers: authHeaders() });
+            document.getElementById(`entry-${id}`)?.remove();
+            if (document.querySelectorAll('.entry-card').length === 0) {
+                document.getElementById('entries-list').innerHTML =
+                    '<p class="empty-state">No entries yet. Write your first one!</p>';
+            }
+        }
+    </script>
 </body>
+
+</html>
