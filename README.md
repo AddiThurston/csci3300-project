@@ -48,7 +48,7 @@ A trends section shows charts of mood, stress, and emotional keywords over time.
 
 1. **Clone the repository**
    ```bash
-   git clone [<repository-url>](https://github.com/AddiThurston/csci3300-project.git)
+   git clone https://github.com/AddiThurston/csci3300-project.git
    cd csci3300-project
    ```
 
