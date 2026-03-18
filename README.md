@@ -1,5 +1,7 @@
 # csci3300-project
 
+## Currently hosted on addi.ddns.net
+
 # InSiteful Mind
 
 A web application for users to track and reflect on their mental health day-to-day. The app analyzes key emotional words to chart mental health over time and provides AI-powered, personalized advice based on journal entries, check-ins, and mood reflections.
