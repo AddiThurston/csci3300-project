@@ -27,61 +27,62 @@
             </a>
         </nav>
     </header>
-
-    <main class="container">
-        <section class="placeholder-shell panel">
-            <h1>Three-Word Reflection Placeholder</h1>
-            <p>
-                This page will host the quick check-in experience where users pick a mood level
-                and submit three words that describe how they feel right now.
-            </p>
-            <div class="mood-slider-block">
-                <div class="mood-slider-header">
-                    <span class="mood-slider-label">Current Mood</span>
-                    <span class="mood-current-value" id="mood-value">Exceptional</span>
-                </div>
-                <input
-                    class="mood-slider"
-                    id="mood-slider"
-                    type="range"
-                    min="1"
-                    max="7"
-                    step="1"
-                    value="1"
-                    aria-label="Mood from exceptional to abysmal"
-                />
-                <div class="mood-scale-labels" aria-hidden="true">
-                    <span>Exceptional</span>
-                    <span>Abysmal</span>
-                </div>
+    <main class="container mood-page">
+        <section class="mood-slider-block panel">
+            <div class="mood-slider-header">
+                <span class="mood-slider-label">Current Mood</span>
+                <span class="mood-current-value" id="mood-value">Okay</span>
             </div>
-            <div class="button-row">
-                <a href="check-in.html">
-                    <button class="main-button">Back to Check-In</button>
-                </a>
-                <a href="journal.html">
-                    <button class="main-button">Write in Journal</button>
-                </a>
+            <input
+                class="mood-slider"
+                id="mood-slider"
+                type="range"
+                min="1"
+                max="7"
+                step="1"
+                value="4"
+                aria-label="Mood from abysmal to exceptional"
+            />
+            <div class="mood-scale-labels" aria-hidden="true">
+                <span>Abysmal</span>
+                <span>Rough</span>
+                <span>Low</span>
+                <span>Okay</span>
+                <span>Good</span>
+                <span>Great</span>
+                <span>Exceptional</span>
             </div>
         </section>
     </main>
 
     <script>
         const moodLevels = [
-            "Exceptional",
-            "Great",
-            "Good",
-            "Okay",
-            "Low",
-            "Rough",
             "Abysmal",
+            "Rough",
+            "Low",
+            "Okay",
+            "Good",
+            "Great",
+            "Exceptional",
+        ];
+        const moodColors = [
+            "#ff5f7a",
+            "#ff7f66",
+            "#ffad5b",
+            "#ffd166",
+            "#9ce36e",
+            "#5bd6b7",
+            "#67f0ff",
         ];
 
+        const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
         const moodValue = document.getElementById("mood-value");
 
         function updateMoodLabel() {
-            moodValue.textContent = moodLevels[Number(moodSlider.value) - 1];
+            const index = Number(moodSlider.value) - 1;
+            moodValue.textContent = moodLevels[index];
+            moodPage.style.setProperty("--mood-accent", moodColors[index]);
         }
 
         moodSlider.addEventListener("input", updateMoodLabel);

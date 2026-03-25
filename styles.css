@@ -226,11 +226,16 @@ header.top-bar {
 }
 
 .mood-slider-block {
-    margin-top: 22px;
-    padding: 18px;
-    border-radius: 14px;
+    width: min(860px, 100%);
+    padding: 28px 26px;
+    border-radius: 18px;
     border: 1px solid var(--line);
-    background: rgba(8, 14, 31, 0.55);
+    background: rgba(8, 14, 31, 0.62);
+}
+
+.mood-page {
+    min-height: 100vh;
+    --mood-accent: var(--accent);
 }
 
 .mood-slider-header {
@@ -238,32 +243,54 @@ header.top-bar {
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-    margin-bottom: 12px;
+    margin-bottom: 18px;
 }
 
 .mood-slider-label {
-    font-size: 14px;
+    font-size: 15px;
     color: var(--muted);
     font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .mood-current-value {
     font-weight: 700;
-    color: var(--accent);
+    color: var(--mood-accent);
+    font-size: clamp(1.1rem, 2.4vw, 1.5rem);
 }
 
 .mood-slider {
     width: 100%;
-    accent-color: var(--primary);
+    accent-color: var(--mood-accent);
+    cursor: pointer;
 }
 
 .mood-scale-labels {
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
     color: var(--muted);
     font-size: 12px;
+}
+
+.mood-scale-labels span {
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .mood-slider-block {
+        padding: 22px 14px;
+    }
+
+    .mood-slider-label {
+        font-size: 13px;
+    }
+
+    .mood-scale-labels {
+        font-size: 10px;
+    }
 }
 
 .journal-layout {
