@@ -10,5 +10,5 @@ window.signinWithGoogle = function(response) {
   sessionStorage.setItem('credential', response.credential);
   console.log(user)
   // Redirect or update UI as needed
-  //window.location.href = 'login.html';
+  window.location.href = 'journal.html';
 };

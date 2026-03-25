@@ -23,7 +23,7 @@ def get_username():
 # Serve HTML files
 @app.route("/")
 @app.route("/<path:filename>")
-def static_files(filename="index.html"):
+def static_files(filename="login.html"):
     return send_from_directory(".", filename)
 
 
