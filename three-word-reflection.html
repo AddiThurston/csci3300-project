@@ -16,14 +16,14 @@
             <a href="journal.html">
                 <button class="main-button"> Journal </button>
             </a>
-            <a href="trends.html">
-                <button class="main-button"> Trends </button>
-            </a>
             <a href="check-in.html">
                 <button class="main-button"> Check-In </button>
             </a>
             <a href="three-word-reflection.html">
                 <button class="main-button"> Three-Word </button>
+            </a>
+            <a href="trends.html">
+                <button class="main-button"> Trends </button>
             </a>
         </nav>
     </header>
@@ -35,6 +35,26 @@
                 This page will host the quick check-in experience where users pick a mood level
                 and submit three words that describe how they feel right now.
             </p>
+            <div class="mood-slider-block">
+                <div class="mood-slider-header">
+                    <span class="mood-slider-label">Current Mood</span>
+                    <span class="mood-current-value" id="mood-value">Exceptional</span>
+                </div>
+                <input
+                    class="mood-slider"
+                    id="mood-slider"
+                    type="range"
+                    min="1"
+                    max="7"
+                    step="1"
+                    value="1"
+                    aria-label="Mood from exceptional to abysmal"
+                />
+                <div class="mood-scale-labels" aria-hidden="true">
+                    <span>Exceptional</span>
+                    <span>Abysmal</span>
+                </div>
+            </div>
             <div class="button-row">
                 <a href="check-in.html">
                     <button class="main-button">Back to Check-In</button>
@@ -45,6 +65,28 @@
             </div>
         </section>
     </main>
+
+    <script>
+        const moodLevels = [
+            "Exceptional",
+            "Great",
+            "Good",
+            "Okay",
+            "Low",
+            "Rough",
+            "Abysmal",
+        ];
+
+        const moodSlider = document.getElementById("mood-slider");
+        const moodValue = document.getElementById("mood-value");
+
+        function updateMoodLabel() {
+            moodValue.textContent = moodLevels[Number(moodSlider.value) - 1];
+        }
+
+        moodSlider.addEventListener("input", updateMoodLabel);
+        updateMoodLabel();
+    </script>
 </body>
 
 </html>

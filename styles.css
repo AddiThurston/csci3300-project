@@ -225,6 +225,47 @@ header.top-bar {
     flex-wrap: wrap;
 }
 
+.mood-slider-block {
+    margin-top: 22px;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(8, 14, 31, 0.55);
+}
+
+.mood-slider-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.mood-slider-label {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.mood-current-value {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.mood-slider {
+    width: 100%;
+    accent-color: var(--primary);
+}
+
+.mood-scale-labels {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
 .journal-layout {
     display: grid;
     grid-template-columns: 1fr 2fr;
