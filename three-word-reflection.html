@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InSiteful Mind - Three-Word Reflection</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <header class="top-bar">
+        <div class="insite-logo"> InSiteful Mind </div>
+        <nav class="wrap row">
+            <a href="journal.html">
+                <button class="main-button"> Journal </button>
+            </a>
+            <a href="check-in.html">
+                <button class="main-button"> Check-In </button>
+            </a>
+            <a href="three-word-reflection.html">
+                <button class="main-button"> Three-Word </button>
+            </a>
+            <a href="trends.html">
+                <button class="main-button"> Trends </button>
+            </a>
+        </nav>
+    </header>
+    <main class="container mood-page">
+        <section class="mood-slider-block panel">
+            <div class="mood-slider-header">
+                <span class="mood-slider-label">Current Mood</span>
+                <span class="mood-current-value" id="mood-value">Okay</span>
+            </div>
+            <input
+                class="mood-slider"
+                id="mood-slider"
+                type="range"
+                min="1"
+                max="7"
+                step="1"
+                value="4"
+                aria-label="Mood from abysmal to exceptional"
+            />
+            <div class="mood-scale-labels" aria-hidden="true">
+                <span>Abysmal</span>
+                <span>Rough</span>
+                <span>Low</span>
+                <span>Okay</span>
+                <span>Good</span>
+                <span>Great</span>
+                <span>Exceptional</span>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const moodLevels = [
+            "Abysmal",
+            "Rough",
+            "Low",
+            "Okay",
+            "Good",
+            "Great",
+            "Exceptional",
+        ];
+        const moodColors = [
+            "#ff5f7a",
+            "#ff7f66",
+            "#ffad5b",
+            "#ffd166",
+            "#9ce36e",
+            "#5bd6b7",
+            "#67f0ff",
+        ];
+
+        const moodPage = document.querySelector(".mood-page");
+        const moodSlider = document.getElementById("mood-slider");
+        const moodValue = document.getElementById("mood-value");
+
+        function updateMoodLabel() {
+            const index = Number(moodSlider.value) - 1;
+            moodValue.textContent = moodLevels[index];
+            moodPage.style.setProperty("--mood-accent", moodColors[index]);
+        }
+
+        moodSlider.addEventListener("input", updateMoodLabel);
+        updateMoodLabel();
+    </script>
+</body>
+
+</html>
