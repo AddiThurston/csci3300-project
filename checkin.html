@@ -1,0 +1,765 @@
+<!doctype html>
+<!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InSiteful Mind — Daily Check-In</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* ── Page layout ── */
+        .checkin-wrapper {
+            width: 100%;
+            max-width: 680px;
+            padding: 40px 20px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .checkin-header h1 {
+            margin: 0 0 6px;
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .checkin-header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        /* ── Mood slider ── */
+        .slider-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px 28px;
+            box-shadow: 0 4px 16px rgba(13,27,42,.06);
+        }
+
+        .slider-card h2 {
+            margin: 0 0 18px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .slider-track-wrap {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        #mood-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 6px;
+            background: linear-gradient(to right,
+                #ef4444 0%,
+                #f97316 25%,
+                #facc15 50%,
+                #4ade80 75%,
+                #22c55e 100%
+            );
+            outline: none;
+            cursor: pointer;
+        }
+
+        #mood-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(13,27,42,.18);
+            cursor: grab;
+            transition: border-color .15s, transform .1s;
+        }
+
+        #mood-slider::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            transform: scale(1.15);
+        }
+
+        #mood-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(13,27,42,.18);
+            cursor: grab;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+
+        .mood-emoji-display {
+            text-align: center;
+            font-size: 48px;
+            margin: 14px 0 4px;
+            transition: transform .2s;
+        }
+
+        .mood-label-display {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0d1b2a;
+            min-height: 22px;
+            transition: opacity .15s;
+        }
+
+        /* ── Word picker ── */
+        .words-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px 28px;
+            box-shadow: 0 4px 16px rgba(13,27,42,.06);
+        }
+
+        .words-card h2 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .words-card .subtitle {
+            margin: 0 0 18px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* Category tabs */
+        .category-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .cat-tab {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: none;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--muted);
+            transition: border-color .15s, background .15s, color .15s;
+        }
+
+        .cat-tab.active {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: var(--primary);
+        }
+
+        /* Word chips */
+        .word-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 80px;
+        }
+
+        .word-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: #f5f7fb;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #0d1b2a;
+            transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
+            user-select: none;
+        }
+
+        .word-chip:hover {
+            border-color: var(--primary);
+            background: var(--secondary);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(47,91,255,.12);
+        }
+
+        .word-chip.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(47,91,255,.28);
+        }
+
+        .word-chip.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Custom word input */
+        .custom-word-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .custom-word-row input {
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 9px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #f5f7fb;
+            color: #0d1b2a;
+        }
+
+        .custom-word-row input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .custom-word-row button {
+            padding: 9px 16px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .custom-word-row button:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ── Selected words display ── */
+        .selected-display {
+            background: var(--secondary);
+            border: 1.5px dashed #b0c0f5;
+            border-radius: 14px;
+            padding: 18px 22px;
+        }
+
+        .selected-display h3 {
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .selected-pills {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 36px;
+            align-items: center;
+        }
+
+        .selected-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .selected-pill button {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,.75);
+            cursor: pointer;
+            font-size: 15px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .selected-pill button:hover {
+            color: #fff;
+        }
+
+        .slot-empty {
+            font-size: 13px;
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .slot-counter {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        /* ── Submit ── */
+        .submit-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        #submit-btn {
+            flex: 1;
+        }
+
+        #submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .skip-link {
+            font-size: 13px;
+            color: var(--muted);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .skip-link:hover {
+            color: #0d1b2a;
+        }
+
+        /* ── Success state ── */
+        .success-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 48px 28px;
+            box-shadow: 0 4px 16px rgba(13,27,42,.06);
+            text-align: center;
+            display: none;
+        }
+
+        .success-card .success-emoji {
+            font-size: 52px;
+            margin-bottom: 16px;
+        }
+
+        .success-card h2 {
+            margin: 0 0 8px;
+            font-size: 22px;
+        }
+
+        .success-card p {
+            color: var(--muted);
+            font-size: 15px;
+            margin: 0 0 24px;
+        }
+
+        .success-words {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .success-word-pill {
+            padding: 8px 18px;
+            border-radius: 20px;
+            background: var(--secondary);
+            color: var(--primary);
+            font-size: 15px;
+            font-weight: 600;
+            border: 1.5px solid #b0c0f5;
+        }
+
+        /* Username overlay (reused from journal.html) */
+        .username-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(13,27,42,.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .username-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 32px 28px;
+            width: min(380px, 90vw);
+            box-shadow: 0 16px 40px rgba(13,27,42,.15);
+            text-align: center;
+        }
+
+        .username-card h2 { margin: 0 0 8px; font-size: 22px; }
+
+        .username-card p { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+
+        .username-card input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+        }
+
+        .username-card input:focus { outline: none; border-color: var(--primary); }
+    </style>
+</head>
+
+<body>
+    <!-- Username prompt -->
+    <div class="username-overlay" id="username-overlay">
+        <div class="username-card">
+            <h2>Welcome</h2>
+            <p>Enter a username to access your check-in.</p>
+            <input type="text" id="username-input" placeholder="Username" />
+            <button class="main-button" onclick="setUsername()" style="width:100%;">Continue</button>
+        </div>
+    </div>
+
+    <header class="top-bar">
+        <div class="insite-logo">InSiteful Mind</div>
+        <nav class="wrap row">
+            <a href="journal.html"><button class="main-button">Journal</button></a>
+            <a href="index.html"><button class="main-button">Trends</button></a>
+            <a href="checkin.html"><button class="main-button">Check-In</button></a>
+        </nav>
+    </header>
+
+    <main class="container" style="align-items: flex-start; justify-content: center;">
+        <div class="checkin-wrapper">
+
+            <div class="checkin-header">
+                <h1>How are you feeling today?</h1>
+                <p>Set your overall mood, then pick up to three words that describe it best.</p>
+            </div>
+
+            <!-- Mood slider -->
+            <div class="slider-card">
+                <h2>Overall Mood</h2>
+                <div class="mood-emoji-display" id="mood-emoji">😐</div>
+                <div class="mood-label-display" id="mood-label">Neutral</div>
+                <div class="slider-track-wrap" style="margin-top: 14px;">
+                    <input type="range" id="mood-slider" min="0" max="100" value="50" />
+                </div>
+                <div class="slider-labels">
+                    <span>Terrible</span>
+                    <span>Bad</span>
+                    <span>Neutral</span>
+                    <span>Good</span>
+                    <span>Great</span>
+                </div>
+            </div>
+
+            <!-- Word picker -->
+            <div class="words-card">
+                <h2>Choose Up to 3 Words</h2>
+                <p class="subtitle">Browse by category or type your own.</p>
+
+                <div class="category-tabs" id="category-tabs">
+                    <button class="cat-tab active" data-cat="all">All</button>
+                    <button class="cat-tab" data-cat="positive">Positive</button>
+                    <button class="cat-tab" data-cat="negative">Negative</button>
+                    <button class="cat-tab" data-cat="physical">Physical</button>
+                    <button class="cat-tab" data-cat="social">Social</button>
+                    <button class="cat-tab" data-cat="cognitive">Cognitive</button>
+                </div>
+
+                <div class="word-grid" id="word-grid"></div>
+
+                <div class="custom-word-row">
+                    <input type="text" id="custom-word-input" placeholder="Add your own word…" maxlength="24" />
+                    <button onclick="addCustomWord()">+ Add</button>
+                </div>
+            </div>
+
+            <!-- Selected words summary -->
+            <div class="selected-display">
+                <h3>Your Words</h3>
+                <div class="selected-pills" id="selected-pills">
+                    <span class="slot-empty">No words selected yet</span>
+                </div>
+                <p class="slot-counter" id="slot-counter">0 / 3 selected</p>
+            </div>
+
+            <!-- Submit -->
+            <div class="submit-row">
+                <button class="main-button" id="submit-btn" onclick="submitCheckin()" disabled>
+                    Save Check-In
+                </button>
+                <a class="skip-link" href="index.html">Skip for today</a>
+            </div>
+
+            <!-- Success state -->
+            <div class="success-card" id="success-card">
+                <div class="success-emoji">🎉</div>
+                <h2>Check-in saved!</h2>
+                <p>Today you felt:</p>
+                <div class="success-words" id="success-words"></div>
+                <a href="index.html"><button class="main-button">View Trends</button></a>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // ── Word bank ──────────────────────────────────────────────────────
+        const WORD_BANK = [
+            // positive
+            { word: "Happy",       cat: "positive" },
+            { word: "Grateful",    cat: "positive" },
+            { word: "Excited",     cat: "positive" },
+            { word: "Hopeful",     cat: "positive" },
+            { word: "Calm",        cat: "positive" },
+            { word: "Motivated",   cat: "positive" },
+            { word: "Content",     cat: "positive" },
+            { word: "Proud",       cat: "positive" },
+            { word: "Inspired",    cat: "positive" },
+            { word: "Optimistic",  cat: "positive" },
+            { word: "Joyful",      cat: "positive" },
+            { word: "Loved",       cat: "positive" },
+            // negative
+            { word: "Anxious",     cat: "negative" },
+            { word: "Sad",         cat: "negative" },
+            { word: "Stressed",    cat: "negative" },
+            { word: "Overwhelmed", cat: "negative" },
+            { word: "Frustrated",  cat: "negative" },
+            { word: "Lonely",      cat: "negative" },
+            { word: "Angry",       cat: "negative" },
+            { word: "Worried",     cat: "negative" },
+            { word: "Hopeless",    cat: "negative" },
+            { word: "Irritable",   cat: "negative" },
+            { word: "Numb",        cat: "negative" },
+            { word: "Guilty",      cat: "negative" },
+            // physical
+            { word: "Energetic",   cat: "physical" },
+            { word: "Tired",       cat: "physical" },
+            { word: "Rested",      cat: "physical" },
+            { word: "Tense",       cat: "physical" },
+            { word: "Restless",    cat: "physical" },
+            { word: "Sick",        cat: "physical" },
+            { word: "Strong",      cat: "physical" },
+            { word: "Sluggish",    cat: "physical" },
+            // social
+            { word: "Connected",   cat: "social" },
+            { word: "Isolated",    cat: "social" },
+            { word: "Supported",   cat: "social" },
+            { word: "Understood",  cat: "social" },
+            { word: "Ignored",     cat: "social" },
+            { word: "Appreciated", cat: "social" },
+            { word: "Judged",      cat: "social" },
+            // cognitive
+            { word: "Focused",     cat: "cognitive" },
+            { word: "Distracted",  cat: "cognitive" },
+            { word: "Creative",    cat: "cognitive" },
+            { word: "Confused",    cat: "cognitive" },
+            { word: "Clear-headed",cat: "cognitive" },
+            { word: "Scattered",   cat: "cognitive" },
+            { word: "Sharp",       cat: "cognitive" },
+        ];
+
+        // ── Mood slider config ─────────────────────────────────────────────
+        const MOOD_LEVELS = [
+            { min: 1,  max: 20,  emoji: "😔", label: "Terrible"  },
+            { min: 21, max: 40,  emoji: "😕", label: "Bad"       },
+            { min: 41, max: 60,  emoji: "😐", label: "Neutral"   },
+            { min: 61, max: 80,  emoji: "🙂", label: "Good"      },
+            { min: 81, max: 100, emoji: "😄", label: "Great"     },
+        ];
+
+        // ── State ──────────────────────────────────────────────────────────
+        let currentUsername = localStorage.getItem('username');
+        let selectedWords   = [];   // max 3
+        let activeCategory  = 'all';
+        let moodScore       = 50;
+
+        // ── Auth ───────────────────────────────────────────────────────────
+        if (currentUsername) {
+            document.getElementById('username-overlay').style.display = 'none';
+        }
+
+        document.getElementById('username-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') setUsername();
+        });
+
+        function setUsername() {
+            const val = document.getElementById('username-input').value.trim();
+            if (!val) return;
+            currentUsername = val;
+            localStorage.setItem('username', val);
+            document.getElementById('username-overlay').style.display = 'none';
+        }
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'X-Username': currentUsername,
+            };
+        }
+
+        // ── Mood slider ────────────────────────────────────────────────────
+        const slider    = document.getElementById('mood-slider');
+        const emojiEl   = document.getElementById('mood-emoji');
+        const labelEl   = document.getElementById('mood-label');
+
+        function updateMoodDisplay(val) {
+            moodScore = val;
+            const level = MOOD_LEVELS.find(l => val >= l.min && val <= l.max);
+            emojiEl.textContent = level.emoji;
+            labelEl.textContent = level.label;
+        }
+
+        slider.addEventListener('input', () => updateMoodDisplay(Number(slider.value)));
+        updateMoodDisplay(50);
+
+        // ── Category tabs ──────────────────────────────────────────────────
+        document.getElementById('category-tabs').addEventListener('click', e => {
+            if (!e.target.matches('.cat-tab')) return;
+            activeCategory = e.target.dataset.cat;
+            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            renderWordGrid();
+        });
+
+        // ── Word grid ──────────────────────────────────────────────────────
+        function renderWordGrid() {
+            const words = activeCategory === 'all'
+                ? WORD_BANK
+                : WORD_BANK.filter(w => w.cat === activeCategory);
+
+            const grid = document.getElementById('word-grid');
+            grid.innerHTML = words.map(({ word }) => {
+                const isSelected = selectedWords.includes(word);
+                const isDisabled = !isSelected && selectedWords.length >= 3;
+                return `<button
+                    class="word-chip ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}"
+                    onclick="toggleWord('${word}')"
+                    aria-pressed="${isSelected}"
+                >${word}</button>`;
+            }).join('');
+        }
+
+        function toggleWord(word) {
+            if (selectedWords.includes(word)) {
+                selectedWords = selectedWords.filter(w => w !== word);
+            } else if (selectedWords.length < 3) {
+                selectedWords = [...selectedWords, word];
+            }
+            renderWordGrid();
+            renderSelected();
+        }
+
+        // ── Custom word ────────────────────────────────────────────────────
+        document.getElementById('custom-word-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') addCustomWord();
+        });
+
+        function addCustomWord() {
+            const input = document.getElementById('custom-word-input');
+            const val   = input.value.trim();
+            if (!val || selectedWords.length >= 3 || selectedWords.includes(val)) {
+                input.value = '';
+                return;
+            }
+            // Add to word bank dynamically so it shows in the grid
+            if (!WORD_BANK.find(w => w.word === val)) {
+                WORD_BANK.push({ word: val, cat: 'all' });
+            }
+            selectedWords = [...selectedWords, val];
+            input.value = '';
+            renderWordGrid();
+            renderSelected();
+        }
+
+        // ── Selected pills ─────────────────────────────────────────────────
+        function renderSelected() {
+            const container = document.getElementById('selected-pills');
+            const counter   = document.getElementById('slot-counter');
+            const submitBtn = document.getElementById('submit-btn');
+
+            counter.textContent = `${selectedWords.length} / 3 selected`;
+            submitBtn.disabled  = selectedWords.length === 0;
+
+            if (selectedWords.length === 0) {
+                container.innerHTML = '<span class="slot-empty">No words selected yet</span>';
+                return;
+            }
+
+            container.innerHTML = selectedWords.map(w => `
+                <div class="selected-pill">
+                    ${w}
+                    <button onclick="toggleWord('${w}')" title="Remove">✕</button>
+                </div>
+            `).join('');
+        }
+
+        // ── Submit ─────────────────────────────────────────────────────────
+        async function submitCheckin() {
+            if (selectedWords.length === 0) return;
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled    = true;
+            btn.textContent = 'Saving…';
+
+            const payload = {
+                words:     selectedWords,
+                moodScore: moodScore,
+                moodLabel: MOOD_LEVELS.find(l => moodScore >= l.min && moodScore <= l.max).label,
+            };
+
+            try {
+                const res = await fetch('/api/checkin', {
+                    method:  'POST',
+                    headers: authHeaders(),
+                    body:    JSON.stringify(payload),
+                });
+
+                if (res.ok) {
+                    showSuccess(payload);
+                } else {
+                    btn.disabled    = false;
+                    btn.textContent = 'Save Check-In';
+                    alert('Something went wrong. Please try again.');
+                }
+            } catch {
+                btn.disabled    = false;
+                btn.textContent = 'Save Check-In';
+                alert('Network error. Please try again.');
+            }
+        }
+
+        function showSuccess({ words, moodLabel, moodScore }) {
+            // Hide form sections
+            document.querySelectorAll('.slider-card, .words-card, .selected-display, .submit-row')
+                .forEach(el => el.style.display = 'none');
+
+            // Build success card
+            const card        = document.getElementById('success-card');
+            const wordsEl     = document.getElementById('success-words');
+            const moodLevel   = MOOD_LEVELS.find(l => moodScore >= l.min && moodScore <= l.max);
+            card.style.display = 'block';
+
+            wordsEl.innerHTML =
+                `<div class="success-word-pill">${moodLevel.emoji} ${moodLabel}</div>` +
+                words.map(w => `<div class="success-word-pill">${w}</div>`).join('');
+        }
+
+        // ── Init ───────────────────────────────────────────────────────────
+        renderWordGrid();
+        renderSelected();
+    </script>
+</body>
+</html>

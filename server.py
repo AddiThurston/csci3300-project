@@ -80,3 +80,65 @@ def delete_entry(entry_id):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3000))
     app.run(port=port, debug=True)
+
+
+
+# POST /api/checkin — save a three-word mood check-in
+@app.post("/api/checkin")
+def create_checkin():
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
+
+    body       = request.get_json() or {}
+    words      = body.get("words", [])
+    mood_score = body.get("moodScore")
+    mood_label = body.get("moodLabel", "")
+
+    if not words or not isinstance(words, list) or len(words) > 3:
+        return jsonify({"error": "Provide 1–3 words"}), 400
+    if mood_score is None or not isinstance(mood_score, (int, float)):
+        return jsonify({"error": "moodScore is required"}), 400
+
+    entry = {
+        "id":        str(int(time.time() * 1000)),
+        "words":     [str(w).strip()[:50] for w in words],
+        "moodScore": int(mood_score),
+        "moodLabel": str(mood_label).strip()[:32],
+        "timestamp": int(time.time() * 1000),
+    }
+
+    redis.hset(f"checkin:{username}", entry["id"], json.dumps(entry))
+    return jsonify(entry), 201
+
+
+# GET /api/checkin — fetch all check-ins for a user
+@app.get("/api/checkin")
+def get_checkins():
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
+
+    data = redis.hgetall(f"checkin:{username}")
+    if not data:
+        return jsonify([])
+
+    entries = [json.loads(v) for v in data.values()]
+    entries.sort(key=lambda e: e["timestamp"], reverse=True)
+    return jsonify(entries)
+
+
+# DELETE /api/checkin/<id> — delete a single check-in
+@app.delete("/api/checkin/<checkin_id>")
+def delete_checkin(checkin_id):
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
+
+    redis.hdel(f"checkin:{username}", checkin_id)
+    return jsonify({"success": True})
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 3000))
+    app.run(port=port, debug=True)
