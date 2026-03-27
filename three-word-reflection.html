@@ -10,52 +10,151 @@
 </head>
 
 <body>
+    <div class="username-overlay" id="username-overlay">
+        <div class="username-card panel">
+            <h2>Welcome</h2>
+            <p>Enter a username to access your check-in.</p>
+            <input type="text" id="username-input" placeholder="Username" />
+            <button class="main-button full-width" onclick="setUsername()">Continue</button>
+        </div>
+    </div>
+
     <header class="top-bar">
         <div class="insite-logo"> InSiteful Mind </div>
         <nav class="wrap row">
-            <a href="journal.html">
-                <button class="main-button"> Journal </button>
-            </a>
-            <a href="check-in.html">
-                <button class="main-button"> Check-In </button>
-            </a>
-            <a href="three-word-reflection.html">
-                <button class="main-button"> Three-Word </button>
-            </a>
-            <a href="trends.html">
-                <button class="main-button"> Trends </button>
-            </a>
+            <a href="journal.html"><button class="main-button"> Journal </button></a>
+            <a href="check-in.html"><button class="main-button"> Check-In </button></a>
+            <a href="three-word-reflection.html"><button class="main-button"> Three-Word </button></a>
+            <a href="trends.html"><button class="main-button"> Trends </button></a>
         </nav>
     </header>
-    <main class="container mood-page">
-        <section class="mood-slider-block panel">
-            <div class="mood-slider-header">
-                <span class="mood-slider-label">Current Mood</span>
-                <span class="mood-current-value" id="mood-value">Okay</span>
+
+    <main class="container container-top mood-page">
+        <div class="checkin-wrapper">
+            <section class="mood-slider-block panel">
+                <div class="mood-slider-header">
+                    <span class="mood-slider-label">Current Mood</span>
+                </div>
+                <div class="mood-scale-wrap">
+                    <span class="mood-current-value mood-indicator" id="mood-value">Okay</span>
+                    <input
+                        class="mood-slider"
+                        id="mood-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value="50"
+                        aria-label="Mood from abysmal to exceptional"
+                    />
+                    <div class="mood-scale-labels" aria-hidden="true">
+                        <span>Abysmal</span>
+                        <span>Rough</span>
+                        <span>Low</span>
+                        <span>Okay</span>
+                        <span>Good</span>
+                        <span>Great</span>
+                        <span>Exceptional</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="words-card panel">
+                <h2>Choose Up to 3 Words</h2>
+                <p class="subtitle">Browse by category or type your own.</p>
+
+                <div class="category-tabs" id="category-tabs">
+                    <button class="cat-tab active" data-cat="all">All</button>
+                    <button class="cat-tab" data-cat="positive">Positive</button>
+                    <button class="cat-tab" data-cat="negative">Negative</button>
+                    <button class="cat-tab" data-cat="physical">Physical</button>
+                    <button class="cat-tab" data-cat="social">Social</button>
+                    <button class="cat-tab" data-cat="cognitive">Cognitive</button>
+                </div>
+
+                <div class="word-grid" id="word-grid"></div>
+
+                <div class="custom-word-row">
+                    <input type="text" id="custom-word-input" placeholder="Add your own word..." maxlength="24" />
+                    <button type="button" onclick="addCustomWord()">+ Add</button>
+                </div>
+            </section>
+
+            <section class="selected-display panel">
+                <h3>Your Words</h3>
+                <div class="selected-pills" id="selected-pills">
+                    <span class="slot-empty">No words selected yet</span>
+                </div>
+                <p class="slot-counter" id="slot-counter">0 / 3 selected</p>
+            </section>
+
+            <div class="submit-row">
+                <button class="main-button" id="submit-btn" onclick="submitCheckin()" disabled>
+                    Save Check-In
+                </button>
+                <a class="skip-link" href="trends.html">Skip for today</a>
             </div>
-            <input
-                class="mood-slider"
-                id="mood-slider"
-                type="range"
-                min="1"
-                max="7"
-                step="1"
-                value="4"
-                aria-label="Mood from abysmal to exceptional"
-            />
-            <div class="mood-scale-labels" aria-hidden="true">
-                <span>Abysmal</span>
-                <span>Rough</span>
-                <span>Low</span>
-                <span>Okay</span>
-                <span>Good</span>
-                <span>Great</span>
-                <span>Exceptional</span>
-            </div>
-        </section>
+
+            <section class="success-card panel" id="success-card">
+                <div class="success-emoji">Done</div>
+                <h2>Check-in saved!</h2>
+                <p>Today you felt:</p>
+                <div class="success-words" id="success-words"></div>
+                <a href="trends.html"><button class="main-button">View Trends</button></a>
+            </section>
+        </div>
     </main>
 
     <script>
+        const WORD_BANK = [
+            { word: "Happy", cat: "positive" },
+            { word: "Grateful", cat: "positive" },
+            { word: "Excited", cat: "positive" },
+            { word: "Hopeful", cat: "positive" },
+            { word: "Calm", cat: "positive" },
+            { word: "Motivated", cat: "positive" },
+            { word: "Content", cat: "positive" },
+            { word: "Proud", cat: "positive" },
+            { word: "Inspired", cat: "positive" },
+            { word: "Optimistic", cat: "positive" },
+            { word: "Joyful", cat: "positive" },
+            { word: "Loved", cat: "positive" },
+            { word: "Anxious", cat: "negative" },
+            { word: "Sad", cat: "negative" },
+            { word: "Stressed", cat: "negative" },
+            { word: "Overwhelmed", cat: "negative" },
+            { word: "Frustrated", cat: "negative" },
+            { word: "Lonely", cat: "negative" },
+            { word: "Angry", cat: "negative" },
+            { word: "Worried", cat: "negative" },
+            { word: "Hopeless", cat: "negative" },
+            { word: "Irritable", cat: "negative" },
+            { word: "Numb", cat: "negative" },
+            { word: "Guilty", cat: "negative" },
+            { word: "Energetic", cat: "physical" },
+            { word: "Tired", cat: "physical" },
+            { word: "Rested", cat: "physical" },
+            { word: "Tense", cat: "physical" },
+            { word: "Restless", cat: "physical" },
+            { word: "Sick", cat: "physical" },
+            { word: "Strong", cat: "physical" },
+            { word: "Sluggish", cat: "physical" },
+            { word: "Connected", cat: "social" },
+            { word: "Isolated", cat: "social" },
+            { word: "Supported", cat: "social" },
+            { word: "Understood", cat: "social" },
+            { word: "Ignored", cat: "social" },
+            { word: "Appreciated", cat: "social" },
+            { word: "Judged", cat: "social" },
+            { word: "Focused", cat: "cognitive" },
+            { word: "Distracted", cat: "cognitive" },
+            { word: "Creative", cat: "cognitive" },
+            { word: "Confused", cat: "cognitive" },
+            { word: "Clear-headed", cat: "cognitive" },
+            { word: "Scattered", cat: "cognitive" },
+            { word: "Sharp", cat: "cognitive" },
+        ];
+
         const moodLevels = [
             "Abysmal",
             "Rough",
@@ -75,18 +174,232 @@
             "#67f0ff",
         ];
 
+        function getSessionUser() {
+            try {
+                return JSON.parse(sessionStorage.getItem("user") || "null");
+            } catch {
+                return null;
+            }
+        }
+
+        function deriveUsernameFromUser(user) {
+            if (!user || typeof user !== "object") return "";
+            return (user.email || user.name || user.sub || "").toString().trim();
+        }
+
+        let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
+        let selectedWords = [];
+        let activeCategory = "all";
+
         const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
         const moodValue = document.getElementById("mood-value");
+        const moodScaleLabels = Array.from(document.querySelectorAll(".mood-scale-labels span"));
+        const usernameOverlay = document.getElementById("username-overlay");
+        const usernameInput = document.getElementById("username-input");
+
+        if (currentUsername) {
+            usernameOverlay.style.display = "none";
+        }
+
+        usernameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") setUsername();
+        });
+
+        function setUsername() {
+            const val = usernameInput.value.trim();
+            if (!val) return;
+            currentUsername = val;
+            localStorage.setItem("username", val);
+            usernameOverlay.style.display = "none";
+        }
+
+        function authHeaders() {
+            const headers = {
+                "Content-Type": "application/json",
+                "X-Username": currentUsername || "",
+            };
+
+            const sessionUser = getSessionUser();
+            if (sessionUser) {
+                headers["X-User-Info"] = JSON.stringify(sessionUser);
+            }
+            return headers;
+        }
+
+        function hexToRgb(hex) {
+            const normalized = hex.replace("#", "");
+            const intVal = Number.parseInt(normalized, 16);
+            return {
+                r: (intVal >> 16) & 255,
+                g: (intVal >> 8) & 255,
+                b: intVal & 255,
+            };
+        }
+
+        function interpolateColor(startHex, endHex, factor) {
+            const start = hexToRgb(startHex);
+            const end = hexToRgb(endHex);
+            const r = Math.round(start.r + (end.r - start.r) * factor);
+            const g = Math.round(start.g + (end.g - start.g) * factor);
+            const b = Math.round(start.b + (end.b - start.b) * factor);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function moodIndexFromScore(score) {
+            return Math.max(0, Math.min(moodLevels.length - 1, Math.round((score / 100) * (moodLevels.length - 1))));
+        }
+
+        function moodAccentFromScore(score) {
+            const clamped = Math.max(0, Math.min(100, score));
+            const scaled = (clamped / 100) * (moodColors.length - 1);
+            const lower = Math.floor(scaled);
+            const upper = Math.ceil(scaled);
+            if (lower === upper) {
+                return moodColors[lower];
+            }
+            return interpolateColor(moodColors[lower], moodColors[upper], scaled - lower);
+        }
 
         function updateMoodLabel() {
-            const index = Number(moodSlider.value) - 1;
+            const score = Number(moodSlider.value);
+            const index = moodIndexFromScore(score);
             moodValue.textContent = moodLevels[index];
-            moodPage.style.setProperty("--mood-accent", moodColors[index]);
+            moodPage.style.setProperty("--mood-accent", moodAccentFromScore(score));
+            moodValue.style.left = `${(index / (moodLevels.length - 1)) * 100}%`;
+            moodScaleLabels.forEach((label, labelIndex) => {
+                label.classList.toggle("active", labelIndex === index);
+            });
+        }
+
+        document.getElementById("category-tabs").addEventListener("click", (e) => {
+            if (!e.target.matches(".cat-tab")) return;
+            activeCategory = e.target.dataset.cat;
+            document.querySelectorAll(".cat-tab").forEach((tab) => tab.classList.remove("active"));
+            e.target.classList.add("active");
+            renderWordGrid();
+        });
+
+        function renderWordGrid() {
+            const words = activeCategory === "all"
+                ? WORD_BANK
+                : WORD_BANK.filter((entry) => entry.cat === activeCategory);
+
+            const grid = document.getElementById("word-grid");
+            grid.innerHTML = words.map(({ word }) => {
+                const isSelected = selectedWords.includes(word);
+                const isDisabled = !isSelected && selectedWords.length >= 3;
+                const escapedWord = word.replace(/'/g, "\\'");
+                return `<button
+                    class="word-chip ${isSelected ? "selected" : ""} ${isDisabled ? "disabled" : ""}"
+                    onclick="toggleWord('${escapedWord}')"
+                    aria-pressed="${isSelected}"
+                >${word}</button>`;
+            }).join("");
+        }
+
+        function toggleWord(word) {
+            if (selectedWords.includes(word)) {
+                selectedWords = selectedWords.filter((entry) => entry !== word);
+            } else if (selectedWords.length < 3) {
+                selectedWords = [...selectedWords, word];
+            }
+            renderWordGrid();
+            renderSelected();
+        }
+        window.toggleWord = toggleWord;
+
+        document.getElementById("custom-word-input").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") addCustomWord();
+        });
+
+        function addCustomWord() {
+            const input = document.getElementById("custom-word-input");
+            const val = input.value.trim();
+            if (!val || selectedWords.length >= 3 || selectedWords.includes(val)) {
+                input.value = "";
+                return;
+            }
+            if (!WORD_BANK.find((entry) => entry.word === val)) {
+                WORD_BANK.push({ word: val, cat: "all" });
+            }
+            selectedWords = [...selectedWords, val];
+            input.value = "";
+            renderWordGrid();
+            renderSelected();
+        }
+        window.addCustomWord = addCustomWord;
+
+        function renderSelected() {
+            const container = document.getElementById("selected-pills");
+            const counter = document.getElementById("slot-counter");
+            const submitBtn = document.getElementById("submit-btn");
+
+            counter.textContent = `${selectedWords.length} / 3 selected`;
+            submitBtn.disabled = selectedWords.length === 0;
+
+            if (selectedWords.length === 0) {
+                container.innerHTML = '<span class="slot-empty">No words selected yet</span>';
+                return;
+            }
+
+            container.innerHTML = selectedWords.map((word) => {
+                const escapedWord = word.replace(/'/g, "\\'");
+                return `
+                <div class="selected-pill">
+                    ${word}
+                    <button onclick="toggleWord('${escapedWord}')" title="Remove">x</button>
+                </div>
+            `;
+            }).join("");
+        }
+
+        async function submitCheckin() {
+            if (selectedWords.length === 0) return;
+            const btn = document.getElementById("submit-btn");
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+
+            const moodScore = Number(moodSlider.value);
+            const moodIndex = moodIndexFromScore(moodScore);
+            const payload = {
+                words: selectedWords,
+                moodScore,
+                moodLabel: moodLevels[moodIndex],
+            };
+
+            try {
+                const response = await fetch("/api/checkin", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) throw new Error("Failed to save check-in");
+                showSuccess(payload);
+            } catch {
+                btn.disabled = false;
+                btn.textContent = "Save Check-In";
+                alert("Could not save check-in right now. Please try again.");
+            }
+        }
+        window.submitCheckin = submitCheckin;
+
+        function showSuccess({ words, moodLabel }) {
+            document.querySelectorAll(".mood-slider-block, .words-card, .selected-display, .submit-row")
+                .forEach((el) => { el.style.display = "none"; });
+
+            const card = document.getElementById("success-card");
+            const wordsEl = document.getElementById("success-words");
+            card.style.display = "block";
+            wordsEl.innerHTML =
+                `<div class="success-word-pill">${moodLabel}</div>` +
+                words.map((word) => `<div class="success-word-pill">${word}</div>`).join("");
         }
 
         moodSlider.addEventListener("input", updateMoodLabel);
         updateMoodLabel();
+        renderWordGrid();
+        renderSelected();
     </script>
 </body>
 
