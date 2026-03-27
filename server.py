@@ -77,12 +77,6 @@ def delete_entry(entry_id):
     return jsonify({"success": True})
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 3000))
-    app.run(port=port, debug=True)
-
-
-
 # POST /api/checkin — save a three-word mood check-in
 @app.post("/api/checkin")
 def create_checkin():

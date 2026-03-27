@@ -263,13 +263,24 @@
 
         function updateMoodLabel() {
             const score = Number(moodSlider.value);
+
+            // Update label text (you already had this)
             const index = moodIndexFromScore(score);
             moodValue.textContent = moodLevels[index];
+
             moodPage.style.setProperty("--mood-accent", moodAccentFromScore(score));
-            moodValue.style.left = `${(index / (moodLevels.length - 1)) * 100}%`;
-            moodScaleLabels.forEach((label, labelIndex) => {
-                label.classList.toggle("active", labelIndex === index);
-            });
+
+            const min = Number(moodSlider.min) || 0;
+            const max = Number(moodSlider.max) || 100;
+            const percent = (score - min) / (max - min);
+
+            const sliderWidth = moodSlider.offsetWidth;
+
+            const thumbWidth = 22;
+
+            const offset = percent * (sliderWidth - thumbWidth) + thumbWidth / 2;
+
+            moodValue.style.left = `${offset}px`;
         }
 
         document.getElementById("category-tabs").addEventListener("click", (e) => {

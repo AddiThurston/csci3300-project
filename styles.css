@@ -287,6 +287,8 @@ header.top-bar {
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
     white-space: nowrap;
     z-index: 2;
+    min-width: 80px;
+    text-align: center;
 }
 
 .mood-slider {
