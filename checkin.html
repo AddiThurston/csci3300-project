@@ -473,18 +473,10 @@
                     <button class="cat-tab active" data-cat="all">All</button>
                     <button class="cat-tab" data-cat="positive">Positive</button>
                     <button class="cat-tab" data-cat="negative">Negative</button>
-                    <button class="cat-tab" data-cat="physical">Physical</button>
-                    <button class="cat-tab" data-cat="social">Social</button>
-                    <button class="cat-tab" data-cat="cognitive">Cognitive</button>
+                    <button class="cat-tab" data-cat="neutral">Neutral</button>
                 </div>
 
                 <div class="word-grid" id="word-grid"></div>
-
-                <div class="custom-word-row">
-                    <input type="text" id="custom-word-input" placeholder="Add your own word…" maxlength="24" />
-                    <button onclick="addCustomWord()">+ Add</button>
-                </div>
-            </div>
 
             <!-- Selected words summary -->
             <div class="selected-display">
@@ -515,61 +507,67 @@
         </div>
     </main>
 
-    <script>
-        // ── Word bank ──────────────────────────────────────────────────────
-        const WORD_BANK = [
-            // positive
-            { word: "Happy",       cat: "positive" },
-            { word: "Grateful",    cat: "positive" },
-            { word: "Excited",     cat: "positive" },
-            { word: "Hopeful",     cat: "positive" },
-            { word: "Calm",        cat: "positive" },
-            { word: "Motivated",   cat: "positive" },
-            { word: "Content",     cat: "positive" },
-            { word: "Proud",       cat: "positive" },
-            { word: "Inspired",    cat: "positive" },
-            { word: "Optimistic",  cat: "positive" },
-            { word: "Joyful",      cat: "positive" },
-            { word: "Loved",       cat: "positive" },
-            // negative
-            { word: "Anxious",     cat: "negative" },
-            { word: "Sad",         cat: "negative" },
-            { word: "Stressed",    cat: "negative" },
+    <script type="module">
+        import {
+            setWordBank,
+            renderWordGrid,
+            renderSelected,
+            selectedWords,
+            WORD_BANK
+        } from "./word-system.js";
+
+        const words = [
+            // Positive
+            { word: "Happy", cat: "positive" },
+            { word: "Grateful", cat: "positive" },
+            { word: "Excited", cat: "positive" },
+            { word: "Hopeful", cat: "positive" },
+            { word: "Calm", cat: "positive" },
+            { word: "Motivated", cat: "positive" },
+            { word: "Content", cat: "positive" },
+            { word: "Proud", cat: "positive" },
+            { word: "Optimistic", cat: "positive" },
+            { word: "Energized", cat: "positive" },
+            { word: "Connected", cat: "positive" },
+            { word: "Focused", cat: "positive" },
+            { word: "Creative", cat: "positive" },
+            { word: "Sharpy", cat: "positive" },
+            { word: "Loved", cat: "positive" },
+
+            // Neutral
+            { word: "Okay", cat: "neutral" },
+            { word: "Meh", cat: "neutral" },
+            { word: "Indifferent", cat: "neutral" },
+            { word: "Fine", cat: "neutral" },
+            { word: "Steady", cat: "neutral" },
+            { word: "Balanced", cat: "neutral" },
+            { word: "Normal", cat: "neutral" },
+            { word: "Unchanged", cat: "neutral" },
+            { word: "Neutral", cat: "neutral" },
+            { word: "Stable", cat: "neutral" },
+            { word: "Average", cat: "neutral" },
+            { word: "Mediocre", cat: "neutral" },
+            { word: "Indecisive", cat: "neutral" },
+
+            // Negative
+            { word: "Anxious", cat: "negative" },
+            { word: "Sad", cat: "negative" },
+            { word: "Stressed", cat: "negative" },
             { word: "Overwhelmed", cat: "negative" },
-            { word: "Frustrated",  cat: "negative" },
-            { word: "Lonely",      cat: "negative" },
-            { word: "Angry",       cat: "negative" },
-            { word: "Worried",     cat: "negative" },
-            { word: "Hopeless",    cat: "negative" },
-            { word: "Irritable",   cat: "negative" },
-            { word: "Numb",        cat: "negative" },
-            { word: "Guilty",      cat: "negative" },
-            // physical
-            { word: "Energetic",   cat: "physical" },
-            { word: "Tired",       cat: "physical" },
-            { word: "Rested",      cat: "physical" },
-            { word: "Tense",       cat: "physical" },
-            { word: "Restless",    cat: "physical" },
-            { word: "Sick",        cat: "physical" },
-            { word: "Strong",      cat: "physical" },
-            { word: "Sluggish",    cat: "physical" },
-            // social
-            { word: "Connected",   cat: "social" },
-            { word: "Isolated",    cat: "social" },
-            { word: "Supported",   cat: "social" },
-            { word: "Understood",  cat: "social" },
-            { word: "Ignored",     cat: "social" },
-            { word: "Appreciated", cat: "social" },
-            { word: "Judged",      cat: "social" },
-            // cognitive
-            { word: "Focused",     cat: "cognitive" },
-            { word: "Distracted",  cat: "cognitive" },
-            { word: "Creative",    cat: "cognitive" },
-            { word: "Confused",    cat: "cognitive" },
-            { word: "Clear-headed",cat: "cognitive" },
-            { word: "Scattered",   cat: "cognitive" },
-            { word: "Sharp",       cat: "cognitive" },
+            { word: "Frustrated", cat: "negative" },
+            { word: "Lonely", cat: "negative" },
+            { word: "Angry", cat: "negative" },
+            { word: "Worried", cat: "negative" },
+            { word: "Tired", cat: "negative" },
+            { word: "Restless", cat: "negative" },
+            { word: "Isolated", cat: "negative" },
+            { word: "Judged", cat: "negative" },
+            { word: "Distracted", cat: "negative" },
+            { word: "Confused", cat: "negative" },
+            { word: "Guilty", cat: "negative" },
         ];
+
+        setWordBank(words);
 
         // ── Mood slider config ─────────────────────────────────────────────
         const MOOD_LEVELS = [
@@ -582,7 +580,6 @@
 
         // ── State ──────────────────────────────────────────────────────────
         let currentUsername = localStorage.getItem('username');
-        let selectedWords   = [];   // max 3
         let activeCategory  = 'all';
         let moodScore       = 50;
 
@@ -633,78 +630,6 @@
             e.target.classList.add('active');
             renderWordGrid();
         });
-
-        // ── Word grid ──────────────────────────────────────────────────────
-        function renderWordGrid() {
-            const words = activeCategory === 'all'
-                ? WORD_BANK
-                : WORD_BANK.filter(w => w.cat === activeCategory);
-
-            const grid = document.getElementById('word-grid');
-            grid.innerHTML = words.map(({ word }) => {
-                const isSelected = selectedWords.includes(word);
-                const isDisabled = !isSelected && selectedWords.length >= 3;
-                return `<button
-                    class="word-chip ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}"
-                    onclick="toggleWord('${word}')"
-                    aria-pressed="${isSelected}"
-                >${word}</button>`;
-            }).join('');
-        }
-
-        function toggleWord(word) {
-            if (selectedWords.includes(word)) {
-                selectedWords = selectedWords.filter(w => w !== word);
-            } else if (selectedWords.length < 3) {
-                selectedWords = [...selectedWords, word];
-            }
-            renderWordGrid();
-            renderSelected();
-        }
-
-        // ── Custom word ────────────────────────────────────────────────────
-        document.getElementById('custom-word-input').addEventListener('keydown', e => {
-            if (e.key === 'Enter') addCustomWord();
-        });
-
-        function addCustomWord() {
-            const input = document.getElementById('custom-word-input');
-            const val   = input.value.trim();
-            if (!val || selectedWords.length >= 3 || selectedWords.includes(val)) {
-                input.value = '';
-                return;
-            }
-            // Add to word bank dynamically so it shows in the grid
-            if (!WORD_BANK.find(w => w.word === val)) {
-                WORD_BANK.push({ word: val, cat: 'all' });
-            }
-            selectedWords = [...selectedWords, val];
-            input.value = '';
-            renderWordGrid();
-            renderSelected();
-        }
-
-        // ── Selected pills ─────────────────────────────────────────────────
-        function renderSelected() {
-            const container = document.getElementById('selected-pills');
-            const counter   = document.getElementById('slot-counter');
-            const submitBtn = document.getElementById('submit-btn');
-
-            counter.textContent = `${selectedWords.length} / 3 selected`;
-            submitBtn.disabled  = selectedWords.length === 0;
-
-            if (selectedWords.length === 0) {
-                container.innerHTML = '<span class="slot-empty">No words selected yet</span>';
-                return;
-            }
-
-            container.innerHTML = selectedWords.map(w => `
-                <div class="selected-pill">
-                    ${w}
-                    <button onclick="toggleWord('${w}')" title="Remove">✕</button>
-                </div>
-            `).join('');
-        }
 
         // ── Submit ─────────────────────────────────────────────────────────
         async function submitCheckin() {
@@ -757,7 +682,6 @@
                 words.map(w => `<div class="success-word-pill">${w}</div>`).join('');
         }
 
-        // ── Init ───────────────────────────────────────────────────────────
         renderWordGrid();
         renderSelected();
     </script>
