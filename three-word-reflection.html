@@ -61,14 +61,6 @@
 
             <section class="words-card panel">
                 <h2>Choose Up to 3 Words</h2>
-                <p class="subtitle">Browse by category or type your own.</p>
-
-                <div class="category-tabs" id="category-tabs">
-                    <button class="cat-tab active" data-cat="all">All</button>
-                    <button class="cat-tab" data-cat="positive">Positive</button>
-                    <button class="cat-tab" data-cat="negative">Negative</button>
-                    <button class="cat-tab" data-cat="neutral">Neutral</button>
-                </div>
 
                 <div class="word-grid" id="word-grid"></div>
             </section>
@@ -286,14 +278,6 @@
 
             moodValue.style.left = `${offset}px`;
         }
-
-        document.getElementById("category-tabs").addEventListener("click", (e) => {
-            if (!e.target.matches(".cat-tab")) return;
-            activeCategory = e.target.dataset.cat;
-            document.querySelectorAll(".cat-tab").forEach((tab) => tab.classList.remove("active"));
-            e.target.classList.add("active");
-            renderWordGrid();
-        });
 
         window.toggleWord = toggleWord;
 

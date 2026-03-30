@@ -467,14 +467,6 @@
             <!-- Word picker -->
             <div class="words-card">
                 <h2>Choose Up to 3 Words</h2>
-                <p class="subtitle">Browse by category or type your own.</p>
-
-                <div class="category-tabs" id="category-tabs">
-                    <button class="cat-tab active" data-cat="all">All</button>
-                    <button class="cat-tab" data-cat="positive">Positive</button>
-                    <button class="cat-tab" data-cat="negative">Negative</button>
-                    <button class="cat-tab" data-cat="neutral">Neutral</button>
-                </div>
 
                 <div class="word-grid" id="word-grid"></div>
 
@@ -621,15 +613,6 @@
 
         slider.addEventListener('input', () => updateMoodDisplay(Number(slider.value)));
         updateMoodDisplay(50);
-
-        // ── Category tabs ──────────────────────────────────────────────────
-        document.getElementById('category-tabs').addEventListener('click', e => {
-            if (!e.target.matches('.cat-tab')) return;
-            activeCategory = e.target.dataset.cat;
-            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-            e.target.classList.add('active');
-            renderWordGrid();
-        });
 
         // ── Submit ─────────────────────────────────────────────────────────
         async function submitCheckin() {
