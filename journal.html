@@ -51,6 +51,14 @@
             <!-- Past Entries -->
             <div class="entries-panel panel">
                 <h2>Past Entries</h2>
+                <div class="search-bar-row">
+                    <input type="text" id="search-input" placeholder="Search by keyword..." oninput="filterEntries()" />
+                    <div class="date-filter-row">
+                        <input type="date" id="date-from" onchange="filterEntries()" title="From date" />
+                        <span class="date-sep">—</span>
+                        <input type="date" id="date-to" onchange="filterEntries()" title="To date" />
+                    </div>
+                </div>
                 <div class="entries-list" id="entries-list">
                     <p class="empty-state">Loading entries...</p>
                 </div>
@@ -99,22 +107,60 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
-        function renderEntries(entries) {
+        let allEntries = [];
+
+        function filterEntries() {
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            const fromVal = document.getElementById('date-from').value;
+            const toVal = document.getElementById('date-to').value;
+
+            let filtered = allEntries;
+
+            if (query) {
+                filtered = filtered.filter(e =>
+                    e.title.toLowerCase().includes(query) ||
+                    e.content.toLowerCase().includes(query)
+                );
+            }
+            if (fromVal) {
+                const from = new Date(fromVal).getTime();
+                filtered = filtered.filter(e => e.timestamp >= from);
+            }
+            if (toVal) {
+                const to = new Date(toVal + 'T23:59:59').getTime();
+                filtered = filtered.filter(e => e.timestamp <= to);
+            }
+
+            renderEntries(filtered, query);
+        }
+
+        function highlightText(str, query) {
+            if (!query) return escapeHtml(str);
+            const escaped = escapeHtml(str);
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return escaped.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>');
+        }
+
+        function renderEntries(entries, query = '') {
             const list = document.getElementById('entries-list');
-            if (entries.length === 0) {
+            if (allEntries.length === 0) {
                 list.innerHTML = '<p class="empty-state">No entries yet. Write your first one!</p>';
+                return;
+            }
+            if (entries.length === 0) {
+                list.innerHTML = '<p class="empty-state">No entries match your search.</p>';
                 return;
             }
             list.innerHTML = entries.map(entry => `
                 <div class="entry-card" id="entry-${entry.id}">
                     <div class="entry-card-header">
-                        <h3>${escapeHtml(entry.title)}</h3>
+                        <h3>${highlightText(entry.title, query)}</h3>
                         <div class="entry-meta">
                             <span class="entry-date">${formatDate(entry.timestamp)}</span>
                             <button class="delete-btn" onclick="deleteEntry('${entry.id}')" title="Delete">&#x2715;</button>
                         </div>
                     </div>
-                    <p class="entry-content">${escapeHtml(entry.content)}</p>
+                    <p class="entry-content">${highlightText(entry.content, query)}</p>
                 </div>
             `).join('');
         }
@@ -122,8 +168,8 @@
         async function loadEntries() {
             try {
                 const res = await fetch('/api/entries', { headers: authHeaders() });
-                const entries = await res.json();
-                renderEntries(entries);
+                allEntries = await res.json();
+                filterEntries();
             } catch {
                 document.getElementById('entries-list').innerHTML =
                     '<p class="empty-state">Failed to load entries.</p>';
@@ -158,11 +204,8 @@
 
         async function deleteEntry(id) {
             await fetch(`/api/entries/${id}`, { method: 'DELETE', headers: authHeaders() });
-            document.getElementById(`entry-${id}`)?.remove();
-            if (document.querySelectorAll('.entry-card').length === 0) {
-                document.getElementById('entries-list').innerHTML =
-                    '<p class="empty-state">No entries yet. Write your first one!</p>';
-            }
+            allEntries = allEntries.filter(e => e.id !== id);
+            filterEntries();
         }
     </script>
 </body>

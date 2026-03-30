@@ -205,46 +205,6 @@
             pointer-events: none;
         }
 
-        /* Custom word input */
-        .custom-word-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-        }
-
-        .custom-word-row input {
-            flex: 1;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 9px 14px;
-            font-size: 14px;
-            font-family: inherit;
-            background: #f5f7fb;
-            color: #0d1b2a;
-        }
-
-        .custom-word-row input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: #fff;
-        }
-
-        .custom-word-row button {
-            padding: 9px 16px;
-            border-radius: 10px;
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .custom-word-row button:hover {
-            background: var(--primary-dark);
-        }
-
         /* ── Selected words display ── */
         .selected-display {
             background: var(--secondary);
@@ -416,6 +376,78 @@
         }
 
         .username-card input:focus { outline: none; border-color: var(--primary); }
+
+        /* ── Past Check-ins History ── */
+        .checkin-history-panel {
+            width: 100%;
+            max-width: 680px;
+            padding: 0 20px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .checkin-history-header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkin-history-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .checkin-history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkin-card {
+            background: rgba(12, 19, 40, 0.88);
+            border: 1px solid rgba(140, 179, 255, 0.28);
+            border-radius: 14px;
+            padding: 16px 20px;
+        }
+
+        .checkin-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .checkin-card-date {
+            font-size: 12px;
+            color: #9cb0d2;
+        }
+
+        .checkin-card-mood {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(95, 140, 255, 0.18);
+            border: 1px solid rgba(95, 140, 255, 0.32);
+            color: #a8c0ff;
+        }
+
+        .checkin-card-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .checkin-word-pill {
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(95, 140, 255, 0.14);
+            border: 1px solid rgba(95, 140, 255, 0.28);
+            color: #dbe6ff;
+            font-size: 13px;
+        }
     </style>
 </head>
 
@@ -497,69 +529,32 @@
             </div>
 
         </div>
+
+        <!-- Past Check-ins History -->
+        <div class="checkin-history-panel" id="checkin-history-panel" style="display:none;">
+            <div class="checkin-history-header">
+                <h2>Past Check-ins</h2>
+                <div class="search-bar-row" style="margin-bottom:0;">
+                    <input type="text" id="checkin-search" placeholder="Search by word or mood..." oninput="filterCheckins()" />
+                    <div class="date-filter-row">
+                        <input type="date" id="checkin-date-from" onchange="filterCheckins()" title="From date" />
+                        <span class="date-sep">—</span>
+                        <input type="date" id="checkin-date-to" onchange="filterCheckins()" title="To date" />
+                    </div>
+                </div>
+            </div>
+            <div id="checkin-history-list">
+                <p class="empty-state">Loading...</p>
+            </div>
+        </div>
     </main>
 
     <script type="module">
         import {
-            setWordBank,
-            renderWordGrid,
+            setActiveCategory,
             renderSelected,
             selectedWords,
-            WORD_BANK
         } from "./word-system.js";
-
-        const words = [
-            // Positive
-            { word: "Happy", cat: "positive" },
-            { word: "Grateful", cat: "positive" },
-            { word: "Excited", cat: "positive" },
-            { word: "Hopeful", cat: "positive" },
-            { word: "Calm", cat: "positive" },
-            { word: "Motivated", cat: "positive" },
-            { word: "Content", cat: "positive" },
-            { word: "Proud", cat: "positive" },
-            { word: "Optimistic", cat: "positive" },
-            { word: "Energized", cat: "positive" },
-            { word: "Connected", cat: "positive" },
-            { word: "Focused", cat: "positive" },
-            { word: "Creative", cat: "positive" },
-            { word: "Sharpy", cat: "positive" },
-            { word: "Loved", cat: "positive" },
-
-            // Neutral
-            { word: "Okay", cat: "neutral" },
-            { word: "Meh", cat: "neutral" },
-            { word: "Indifferent", cat: "neutral" },
-            { word: "Fine", cat: "neutral" },
-            { word: "Steady", cat: "neutral" },
-            { word: "Balanced", cat: "neutral" },
-            { word: "Normal", cat: "neutral" },
-            { word: "Unchanged", cat: "neutral" },
-            { word: "Neutral", cat: "neutral" },
-            { word: "Stable", cat: "neutral" },
-            { word: "Average", cat: "neutral" },
-            { word: "Mediocre", cat: "neutral" },
-            { word: "Indecisive", cat: "neutral" },
-
-            // Negative
-            { word: "Anxious", cat: "negative" },
-            { word: "Sad", cat: "negative" },
-            { word: "Stressed", cat: "negative" },
-            { word: "Overwhelmed", cat: "negative" },
-            { word: "Frustrated", cat: "negative" },
-            { word: "Lonely", cat: "negative" },
-            { word: "Angry", cat: "negative" },
-            { word: "Worried", cat: "negative" },
-            { word: "Tired", cat: "negative" },
-            { word: "Restless", cat: "negative" },
-            { word: "Isolated", cat: "negative" },
-            { word: "Judged", cat: "negative" },
-            { word: "Distracted", cat: "negative" },
-            { word: "Confused", cat: "negative" },
-            { word: "Guilty", cat: "negative" },
-        ];
-
-        setWordBank(words);
 
         // ── Mood slider config ─────────────────────────────────────────────
         const MOOD_LEVELS = [
@@ -572,7 +567,6 @@
 
         // ── State ──────────────────────────────────────────────────────────
         let currentUsername = localStorage.getItem('username');
-        let activeCategory  = 'all';
         let moodScore       = 50;
 
         // ── Auth ───────────────────────────────────────────────────────────
@@ -590,6 +584,7 @@
             currentUsername = val;
             localStorage.setItem('username', val);
             document.getElementById('username-overlay').style.display = 'none';
+            loadCheckinHistory();
         }
 
         function authHeaders() {
@@ -611,7 +606,17 @@
             labelEl.textContent = level.label;
         }
 
-        slider.addEventListener('input', () => updateMoodDisplay(Number(slider.value)));
+        function sliderCategory(val) {
+            if (val <= 40) return 'negative';
+            if (val <= 60) return 'neutral';
+            return 'positive';
+        }
+
+        slider.addEventListener('input', () => {
+            const val = Number(slider.value);
+            updateMoodDisplay(val);
+            setActiveCategory(sliderCategory(val));
+        });
         updateMoodDisplay(50);
 
         // ── Submit ─────────────────────────────────────────────────────────
@@ -663,10 +668,98 @@
             wordsEl.innerHTML =
                 `<div class="success-word-pill">${moodLevel.emoji} ${moodLabel}</div>` +
                 words.map(w => `<div class="success-word-pill">${w}</div>`).join('');
+
+            loadCheckinHistory();
         }
 
-        renderWordGrid();
+        setActiveCategory(sliderCategory(50));
         renderSelected();
+
+        // ── Past Check-ins History ─────────────────────────────────────────
+        let allCheckins = [];
+
+        function formatCheckinDate(ts) {
+            return new Date(ts).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function highlightText(str, query) {
+            if (!query) return escapeHtml(str);
+            const escaped = escapeHtml(str);
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return escaped.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>');
+        }
+
+        function filterCheckins() {
+            const query = document.getElementById('checkin-search').value.trim().toLowerCase();
+            const fromVal = document.getElementById('checkin-date-from').value;
+            const toVal = document.getElementById('checkin-date-to').value;
+
+            let filtered = allCheckins;
+
+            if (query) {
+                filtered = filtered.filter(c =>
+                    c.words.some(w => w.toLowerCase().includes(query)) ||
+                    c.moodLabel.toLowerCase().includes(query)
+                );
+            }
+            if (fromVal) {
+                const from = new Date(fromVal).getTime();
+                filtered = filtered.filter(c => c.timestamp >= from);
+            }
+            if (toVal) {
+                const to = new Date(toVal + 'T23:59:59').getTime();
+                filtered = filtered.filter(c => c.timestamp <= to);
+            }
+
+            renderCheckins(filtered, query);
+        }
+
+        function renderCheckins(checkins, query = '') {
+            const list = document.getElementById('checkin-history-list');
+            if (allCheckins.length === 0) {
+                list.innerHTML = '<p class="empty-state">No check-ins yet.</p>';
+                return;
+            }
+            if (checkins.length === 0) {
+                list.innerHTML = '<p class="empty-state">No check-ins match your search.</p>';
+                return;
+            }
+            list.innerHTML = checkins.map(c => `
+                <div class="checkin-card">
+                    <div class="checkin-card-header">
+                        <span class="checkin-card-date">${formatCheckinDate(c.timestamp)}</span>
+                        <span class="checkin-card-mood">${highlightText(c.moodLabel, query)} · ${c.moodScore}</span>
+                    </div>
+                    <div class="checkin-card-words">
+                        ${c.words.map(w => `<span class="checkin-word-pill">${highlightText(w, query)}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadCheckinHistory() {
+            if (!currentUsername) return;
+            try {
+                const res = await fetch('/api/checkin', {
+                    headers: { 'X-Username': currentUsername }
+                });
+                allCheckins = await res.json();
+                document.getElementById('checkin-history-panel').style.display = '';
+                filterCheckins();
+            } catch {
+                // silently fail — history is optional
+            }
+        }
+
+        // Load history once user is known
+        if (currentUsername) loadCheckinHistory();
     </script>
 </body>
 </html>

@@ -1,14 +1,63 @@
 export let selectedWords = [];
-export let WORD_BANK = [];
 
-export function setWordBank(words) {
-    WORD_BANK = words;
+export const WORD_BANK = [
+    // Positive
+    { word: "Happy",      cat: "positive" },
+    { word: "Grateful",   cat: "positive" },
+    { word: "Excited",    cat: "positive" },
+    { word: "Hopeful",    cat: "positive" },
+    { word: "Calm",       cat: "positive" },
+    { word: "Motivated",  cat: "positive" },
+    { word: "Content",    cat: "positive" },
+    { word: "Proud",      cat: "positive" },
+    { word: "Optimistic", cat: "positive" },
+    { word: "Energized",  cat: "positive" },
+    { word: "Connected",  cat: "positive" },
+    { word: "Focused",    cat: "positive" },
+    { word: "Creative",   cat: "positive" },
+    { word: "Loved",      cat: "positive" },
+
+    // Neutral
+    { word: "Okay",        cat: "neutral" },
+    { word: "Fine",        cat: "neutral" },
+    { word: "Steady",      cat: "neutral" },
+    { word: "Balanced",    cat: "neutral" },
+    { word: "Normal",      cat: "neutral" },
+    { word: "Neutral",     cat: "neutral" },
+    { word: "Stable",      cat: "neutral" },
+    { word: "Indifferent", cat: "neutral" },
+
+    // Negative
+    { word: "Anxious",     cat: "negative" },
+    { word: "Sad",         cat: "negative" },
+    { word: "Stressed",    cat: "negative" },
+    { word: "Overwhelmed", cat: "negative" },
+    { word: "Frustrated",  cat: "negative" },
+    { word: "Lonely",      cat: "negative" },
+    { word: "Angry",       cat: "negative" },
+    { word: "Worried",     cat: "negative" },
+    { word: "Tired",       cat: "negative" },
+    { word: "Restless",    cat: "negative" },
+    { word: "Isolated",    cat: "negative" },
+    { word: "Confused",    cat: "negative" },
+    { word: "Guilty",      cat: "negative" },
+];
+
+export function setActiveCategory(category) {
+    // Remove selected words that don't belong to the new category
+    selectedWords = selectedWords.filter(word => {
+        const entry = WORD_BANK.find(w => w.word === word);
+        return entry && entry.cat === category;
+    });
+    renderWordGrid(category);
+    renderSelected();
 }
 
-export function renderWordGrid() {
+export function renderWordGrid(filterCat = null) {
     const grid = document.getElementById('word-grid');
+    const visible = filterCat ? WORD_BANK.filter(w => w.cat === filterCat) : WORD_BANK;
 
-    grid.innerHTML = WORD_BANK.map(({ word }) => {
+    grid.innerHTML = visible.map(({ word }) => {
         const isSelected = selectedWords.includes(word);
         const isDisabled = !isSelected && selectedWords.length >= 3;
 

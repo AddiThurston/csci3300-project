@@ -92,65 +92,10 @@
 
     <script type="module">
         import {
-            setWordBank,
-            renderWordGrid,
+            setActiveCategory,
             renderSelected,
             selectedWords,
-            WORD_BANK
         } from "./word-system.js";
-
-        const words = [
-            // Positive
-            { word: "Happy", cat: "positive" },
-            { word: "Grateful", cat: "positive" },
-            { word: "Excited", cat: "positive" },
-            { word: "Hopeful", cat: "positive" },
-            { word: "Calm", cat: "positive" },
-            { word: "Motivated", cat: "positive" },
-            { word: "Content", cat: "positive" },
-            { word: "Proud", cat: "positive" },
-            { word: "Optimistic", cat: "positive" },
-            { word: "Energized", cat: "positive" },
-            { word: "Connected", cat: "positive" },
-            { word: "Focused", cat: "positive" },
-            { word: "Creative", cat: "positive" },
-            { word: "Sharpy", cat: "positive" },
-            { word: "Loved", cat: "positive" },
-
-            // Neutral
-            { word: "Okay", cat: "neutral" },
-            { word: "Meh", cat: "neutral" },
-            { word: "Indifferent", cat: "neutral" },
-            { word: "Fine", cat: "neutral" },
-            { word: "Steady", cat: "neutral" },
-            { word: "Balanced", cat: "neutral" },
-            { word: "Normal", cat: "neutral" },
-            { word: "Unchanged", cat: "neutral" },
-            { word: "Neutral", cat: "neutral" },
-            { word: "Stable", cat: "neutral" },
-            { word: "Average", cat: "neutral" },
-            { word: "Mediocre", cat: "neutral" },
-            { word: "Indecisive", cat: "neutral" },
-
-            // Negative
-            { word: "Anxious", cat: "negative" },
-            { word: "Sad", cat: "negative" },
-            { word: "Stressed", cat: "negative" },
-            { word: "Overwhelmed", cat: "negative" },
-            { word: "Frustrated", cat: "negative" },
-            { word: "Lonely", cat: "negative" },
-            { word: "Angry", cat: "negative" },
-            { word: "Worried", cat: "negative" },
-            { word: "Tired", cat: "negative" },
-            { word: "Restless", cat: "negative" },
-            { word: "Isolated", cat: "negative" },
-            { word: "Judged", cat: "negative" },
-            { word: "Distracted", cat: "negative" },
-            { word: "Confused", cat: "negative" },
-            { word: "Guilty", cat: "negative" },
-        ];
-
-        setWordBank(words);
 
         const moodLevels = [
             "Abysmal",
@@ -185,7 +130,6 @@
         }
 
         let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
-        let activeCategory = "all";
 
         const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
@@ -323,9 +267,19 @@
                 words.map((word) => `<div class="success-word-pill">${word}</div>`).join("");
         }
 
-        moodSlider.addEventListener("input", updateMoodLabel);
+        function sliderCategory(val) {
+            // 7 levels — Abysmal/Rough/Low → negative, Okay → neutral, Good/Great/Exceptional → positive
+            if (val <= 45) return 'negative';
+            if (val <= 54) return 'neutral';
+            return 'positive';
+        }
+
+        moodSlider.addEventListener("input", () => {
+            updateMoodLabel();
+            setActiveCategory(sliderCategory(Number(moodSlider.value)));
+        });
         updateMoodLabel();
-        renderWordGrid();
+        setActiveCategory(sliderCategory(50));
         renderSelected();
     </script>
 </body>
