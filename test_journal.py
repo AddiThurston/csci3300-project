@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 mock_redis = MagicMock()
 patch("upstash_redis.Redis", return_value=mock_redis).start()
 
-from server import app  # noqa: E402  (import after patch)
+from server import app  
 
 
 class JournalTests(unittest.TestCase):
@@ -23,7 +23,6 @@ class JournalTests(unittest.TestCase):
             "X-Username": self.username,
         }
         # Each test gets its own clean in-memory store keyed by Redis hash key.
-        # { "journal:<username>": { entry_id: json_string, ... } }
         self._store: dict = {}
         self._setup_redis_mock()
 
@@ -43,7 +42,6 @@ class JournalTests(unittest.TestCase):
         mock_redis.hgetall.side_effect = hgetall
         mock_redis.hdel.side_effect = hdel
 
-    # ------------------------------------------------------------------ POST
 
     def test_valid_entry(self):
         """201 returned; echoes title, content, id, and timestamp."""
@@ -104,8 +102,6 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.get_json()["error"], "Username required")
 
-    # ------------------------------------------------------------------ GET
-
     def test_get_requires_username(self):
         """Missing X-Username header should return 401."""
         res = self.client.get("/api/entries")
@@ -123,7 +119,7 @@ class JournalTests(unittest.TestCase):
         self.client.post("/api/entries",
             data=json.dumps({"title": "First", "content": "Entry one."}),
             headers=self.headers)
-        time.sleep(0.02)   # ensure distinct ms timestamps
+        time.sleep(0.02)  
         self.client.post("/api/entries",
             data=json.dumps({"title": "Second", "content": "Entry two."}),
             headers=self.headers)
@@ -156,8 +152,6 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(len(entries_b), 1)
         self.assertEqual(entries_a[0]["title"], "A")
         self.assertEqual(entries_b[0]["title"], "B")
-
-    # ------------------------------------------------------------------ DELETE
 
     def test_delete_requires_username(self):
         """Missing X-Username header should return 401."""
