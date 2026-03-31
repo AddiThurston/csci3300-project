@@ -113,12 +113,32 @@ def get_checkins():
     if not username:
         return jsonify({"error": "Username required"}), 401
 
+    limit_raw = request.args.get("limit")
+    limit = None
+    if limit_raw is not None:
+        try:
+            limit = int(limit_raw)
+            if limit < 1:
+                raise ValueError
+        except ValueError:
+            return jsonify({"error": "limit must be a positive integer"}), 400
+
     data = redis.hgetall(f"checkin:{username}")
     if not data:
-        return jsonify([])
+        return jsonify({"entries": [], "total": 0, "hasMore": False})
 
     entries = [json.loads(v) for v in data.values()]
     entries.sort(key=lambda e: e["timestamp"], reverse=True)
+
+    if limit is not None:
+        total = len(entries)
+        limited_entries = entries[:limit]
+        return jsonify({
+            "entries": limited_entries,
+            "total": total,
+            "hasMore": total > limit,
+        })
+
     return jsonify(entries)
 
 
