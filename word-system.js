@@ -1,4 +1,5 @@
 export let selectedWords = [];
+let currentCategory = null;
 
 export const WORD_BANK = [
     // Positive
@@ -44,18 +45,18 @@ export const WORD_BANK = [
 ];
 
 export function setActiveCategory(category) {
-    // Remove selected words that don't belong to the new category
+    currentCategory = category;
     selectedWords = selectedWords.filter(word => {
         const entry = WORD_BANK.find(w => w.word === word);
         return entry && entry.cat === category;
     });
-    renderWordGrid(category);
+    renderWordGrid();
     renderSelected();
 }
 
-export function renderWordGrid(filterCat = null) {
+export function renderWordGrid() {
     const grid = document.getElementById('word-grid');
-    const visible = filterCat ? WORD_BANK.filter(w => w.cat === filterCat) : WORD_BANK;
+    const visible = currentCategory ? WORD_BANK.filter(w => w.cat === currentCategory) : WORD_BANK;
 
     grid.innerHTML = visible.map(({ word }) => {
         const isSelected = selectedWords.includes(word);
