@@ -531,9 +531,13 @@ header.top-bar {
 }
 
 .skip-link {
+    border: none;
+    background: transparent;
+    padding: 0;
     color: var(--muted);
     font-size: 13px;
-    text-decoration: none;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .success-card {
@@ -569,6 +573,47 @@ header.top-bar {
     border-radius: 999px;
     border: 1px solid var(--line);
     background: rgba(95, 140, 255, 0.18);
+}
+
+.history-card {
+    display: none;
+    padding: 22px;
+}
+
+.history-header h3 {
+    margin: 0 0 6px;
+}
+
+#history-meta {
+    margin: 0 0 14px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.history-item {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-date {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.history-status {
+    margin: 6px 0;
+    color: var(--muted);
+    font-size: 13px;
 }
 
 @media (max-width: 640px) {
