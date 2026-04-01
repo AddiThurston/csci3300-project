@@ -15,6 +15,7 @@ redis = Redis(
 )
 
 
+
 def get_username():
     """Get the username from the X-Username header."""
     return request.headers.get("X-Username", "").strip() or None
@@ -55,6 +56,8 @@ def create_entry():
     if not content:
         return jsonify({"error": "Content is required"}), 400
 
+    # kysen code review: This function validates input, builds the entry dict, AND persists it.
+    # Consider extracting build_entry(body) and save_entry(username, entry) as separate helpers.
     entry = {
         "id": str(int(time.time() * 1000)),
         "title": (body.get("title") or "Untitled").strip(),
@@ -89,6 +92,9 @@ def create_checkin():
     mood_score = body.get("moodScore")
     mood_label = body.get("moodLabel", "")
 
+    # kysen code review: Validation, entry construction, and persistence are all mixed here.
+    # Same pattern as create_entry — extract validate_checkin(body), build_checkin(body),
+    # and save_checkin(username, entry) to give each step a single responsibility.
     if not words or not isinstance(words, list) or len(words) > 3:
         return jsonify({"error": "Provide 1–3 words"}), 400
     if mood_score is None or not isinstance(mood_score, (int, float)):

@@ -109,6 +109,8 @@
 
         let allEntries = [];
 
+        // kysen code review: filterEntries handles keyword filtering, from-date filtering, and to-date filtering
+        // all in one function. Consider extracting applyKeywordFilter(), applyDateRangeFilter().
         function filterEntries() {
             const query = document.getElementById('search-input').value.trim().toLowerCase();
             const fromVal = document.getElementById('date-from').value;
@@ -176,6 +178,9 @@
             }
         }
 
+        // kysen code review: saveEntry manages button UI state, makes the API call, and clears the form.
+        // These are three distinct responsibilities — consider extracting clearEntryForm() and
+        // keeping saveEntry focused only on the API call.
         async function saveEntry() {
             const title = document.getElementById('entry-title').value.trim();
             const content = document.getElementById('entry-content').value.trim();

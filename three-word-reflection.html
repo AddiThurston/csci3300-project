@@ -154,6 +154,9 @@
             usernameOverlay.style.display = "none";
         }
 
+        // kysen code review: authHeaders builds the header object AND reads/parses the session user.
+        // getSessionUser() is already extracted — consider keeping authHeaders() a pure
+        // header assembler and passing the user in as a parameter instead.
         function authHeaders() {
             const headers = {
                 "Content-Type": "application/json",
@@ -201,6 +204,9 @@
             return interpolateColor(moodColors[lower], moodColors[upper], scaled - lower);
         }
 
+        // kysen code review: updateMoodLabel updates the label text, sets a CSS variable, AND repositions
+        // the label element. Each of those is a separate concern — consider splittin into
+        // updateMoodText(score) and updateMoodLabelPosition(score).
         function updateMoodLabel() {
             const score = Number(moodSlider.value);
 
@@ -225,6 +231,9 @@
 
         window.toggleWord = toggleWord;
 
+        // kysen code review: submitCheckin manages button UI state, builds the payload, makes the API call,
+        // and calls showSuccess. Consider extracting buildCheckinPayload() and letting
+        // submitCheckin focus only on the fetch + error handling.
         async function submitCheckin() {
             if (selectedWords.length === 0) return;
             const btn = document.getElementById("submit-btn");
