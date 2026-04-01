@@ -44,6 +44,8 @@ export const WORD_BANK = [ // Good job fixing the word bank duplication, it help
     { word: "Guilty",      cat: "negative" },
 ];
 
+// kysen code review: This function updates state, filters selected words, AND triggers two renders.
+// Consider splitting into setCategory(category) for state + a separate filterSelectedToCategory().
 export function setActiveCategory(category) {
     currentCategory = category;
     selectedWords = selectedWords.filter(word => {
@@ -72,6 +74,8 @@ export function renderWordGrid() {
     }).join('');
 }
 
+// kysen code review: toggleWord handles both state mutation and triggering re-renders.
+// Separating the state update from the render call would make each easier to test independently.
 export function toggleWord(word) {
     if (selectedWords.includes(word)) {
         selectedWords = selectedWords.filter(w => w !== word);
@@ -83,6 +87,8 @@ export function toggleWord(word) {
     renderSelected();
 }
 
+// kysen code review: renderSelected renders the pill list AND updates the submit button state.
+// The button enable/disable logic is a separate concern — consider extracting updateSubmitButton().
 export function renderSelected() {
     const container = document.getElementById('selected-pills');
     const counter = document.getElementById('slot-counter');

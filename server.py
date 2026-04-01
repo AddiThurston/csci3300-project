@@ -6,18 +6,18 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from upstash_redis import Redis
 
-load_dotenv() # load the environment variables from the .env file
+load_dotenv()
 
 app = Flask(__name__, static_folder=".")
-
-# redis needs a URL and token to connect to the database
 redis = Redis(
     url=os.environ["UPSTASH_REDIS_REST_URL"],
     token=os.environ["UPSTASH_REDIS_REST_TOKEN"],
 )
 
-# get the username from the X-Username header in the HTML
+
+
 def get_username():
+    """Get the username from the X-Username header."""
     return request.headers.get("X-Username", "").strip() or None
 
 
@@ -56,6 +56,8 @@ def create_entry():
     if not content:
         return jsonify({"error": "Content is required"}), 400
 
+    # kysen code review: This function validates input, builds the entry dict, AND persists it.
+    # Consider extracting build_entry(body) and save_entry(username, entry) as separate helpers.
     entry = {
         "id": str(int(time.time() * 1000)),
         "title": (body.get("title") or "Untitled").strip(),
@@ -90,6 +92,9 @@ def create_checkin():
     mood_score = body.get("moodScore")
     mood_label = body.get("moodLabel", "")
 
+    # kysen code review: Validation, entry construction, and persistence are all mixed here.
+    # Same pattern as create_entry — extract validate_checkin(body), build_checkin(body),
+    # and save_checkin(username, entry) to give each step a single responsibility.
     if not words or not isinstance(words, list) or len(words) > 3:
         return jsonify({"error": "Provide 1–3 words"}), 400
     if mood_score is None or not isinstance(mood_score, (int, float)):
@@ -114,32 +119,12 @@ def get_checkins():
     if not username:
         return jsonify({"error": "Username required"}), 401
 
-    limit_raw = request.args.get("limit")
-    limit = None
-    if limit_raw is not None:
-        try:
-            limit = int(limit_raw)
-            if limit < 1:
-                raise ValueError
-        except ValueError:
-            return jsonify({"error": "limit must be a positive integer"}), 400
-
     data = redis.hgetall(f"checkin:{username}")
     if not data:
-        return jsonify({"entries": [], "total": 0, "hasMore": False})
+        return jsonify([])
 
     entries = [json.loads(v) for v in data.values()]
     entries.sort(key=lambda e: e["timestamp"], reverse=True)
-
-    if limit is not None:
-        total = len(entries)
-        limited_entries = entries[:limit]
-        return jsonify({
-            "entries": limited_entries,
-            "total": total,
-            "hasMore": total > limit,
-        })
-
     return jsonify(entries)
 
 
