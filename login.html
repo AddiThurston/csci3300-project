@@ -1,8 +1,10 @@
 <!doctype html>
 <!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
+<!-- WIP: Make this actually work with the backend and database (stateless auth) -->
 <html lang="en">
 
 <head>
+    <!-- Meta tags, title, and link to stylesheet -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
@@ -16,6 +18,7 @@
         <section class="login-logo">
             <p>InSiteful Mind</p>
         </section>
+        <!-- signin with Google button -->
         <section class="login-card panel">
             <h1>Welcome!</h1>
             <p class="login-subtitle">Sign in with Google to continue.</p>
@@ -26,19 +29,44 @@
             <div class="g_id_signin" data-shape="pill" data-width="320">
             </div>
             <script>
-                window.signinWithGoogle = function (response) {
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    const user = {
-                        email: payload.email,
-                        name: payload.name,
-                        picture: payload.picture,
-                        sub: payload.sub,
-                    };
-                    sessionStorage.setItem('user', JSON.stringify(user));
-                    sessionStorage.setItem('credential', response.credential);
-                    console.log(user)
-                    // Redirect or update UI as needed
-                    window.location.href = 'journal.html';
+                // Decode the JWT payload from Google's credential response.
+                // JWT uses base64url encoding, so we normalize it before atob().
+                function decodeJwtPayload(jwt) {
+                    const payloadPart = jwt.split('.')[1];
+                    const base64 = payloadPart.replaceAll('-', '+').replaceAll('_', '/');
+                    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+                    return JSON.parse(atob(padded));
+                }
+
+                // Google Identity Services callback declared in data-callback.
+                //globalThis instead of window to avoid conflicts with other scripts
+                globalThis.signinWithGoogle = function (response) {
+                    // check if the response is valid
+                    if (!response || !response.credential) {
+                        console.error('Google sign-in did not return a credential.');
+                        return;
+                    }
+
+                    try {
+                        const payload = decodeJwtPayload(response.credential);
+                        // WIP (idk what to do to with this yet)
+                        const user = {
+                            email: payload.email,
+                            name: payload.name,
+                            picture: payload.picture,
+                            sub: payload.sub,
+                        };
+
+                        // Store basic profile info and raw credential for next page usage.
+                        // Note: this is client-side state only (no backend validation yet).
+                        sessionStorage.setItem('user', JSON.stringify(user));
+                        sessionStorage.setItem('credential', response.credential);
+
+                        // Move the user into the app after successful sign-in.
+                        globalThis.location.href = 'index.html';
+                    } catch (error) {
+                        console.error('Failed to parse Google credential payload.', error);
+                    }
                 };
             </script>
         </section>

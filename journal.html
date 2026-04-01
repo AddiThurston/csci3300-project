@@ -3,14 +3,15 @@
 <html lang="en">
 
 <head>
+    <!-- Meta tags, title, and link to stylesheet -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>InSiteful Mind</title>
+    <title>InSiteful Mind - Journal</title>
     <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-    <!-- Username prompt -->
+    <!-- Username prompt overlay if the user is not logged in -->
     <div class="username-overlay" id="username-overlay">
         <div class="username-card panel">
             <h2>Welcome</h2>
@@ -22,6 +23,7 @@
 
     <header class="top-bar">
         <div class="insite-logo"> InSiteful Mind </div>
+        <!-- Navigation buttons -->
         <nav class="wrap row">
             <a href="journal.html">
                 <button class="main-button"> Journal </button>
@@ -80,6 +82,7 @@
             if (e.key === 'Enter') setUsername();
         });
 
+        // set the username in local storage and load the entries
         function setUsername() {
             const val = document.getElementById('username-input').value.trim();
             if (!val) return;
@@ -89,6 +92,7 @@
             loadEntries();
         }
 
+        // returns the headers used in the API request
         function authHeaders() {
             return {
                 'Content-Type': 'application/json',
@@ -96,6 +100,7 @@
             };
         }
 
+        // formats the date in the format of month day, year hour:minute
         function formatDate(timestamp) {
             return new Date(timestamp).toLocaleDateString('en-US', {
                 month: 'short', day: 'numeric', year: 'numeric',
@@ -103,12 +108,14 @@
             });
         }
 
+        // ensures the string is safe to display in the HTML
         function escapeHtml(str) {
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         let allEntries = [];
 
+        // filters the entries based on the search input, from date, and to date
         function filterEntries() {
             const query = document.getElementById('search-input').value.trim().toLowerCase();
             const fromVal = document.getElementById('date-from').value;
@@ -116,24 +123,28 @@
 
             let filtered = allEntries;
 
+            // filter by title or content
             if (query) {
                 filtered = filtered.filter(e =>
                     e.title.toLowerCase().includes(query) ||
                     e.content.toLowerCase().includes(query)
                 );
             }
+            // filter by from date
             if (fromVal) {
                 const from = new Date(fromVal).getTime();
                 filtered = filtered.filter(e => e.timestamp >= from);
             }
+            // filter by to date
             if (toVal) {
                 const to = new Date(toVal + 'T23:59:59').getTime();
                 filtered = filtered.filter(e => e.timestamp <= to);
             }
-
+            // render the entries
             renderEntries(filtered, query);
         }
 
+        // highlights the text in the entry that matches the search query
         function highlightText(str, query) {
             if (!query) return escapeHtml(str);
             const escaped = escapeHtml(str);
@@ -141,6 +152,7 @@
             return escaped.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>');
         }
 
+        // renders the entries in the list
         function renderEntries(entries, query = '') {
             const list = document.getElementById('entries-list');
             if (allEntries.length === 0) {
@@ -151,6 +163,7 @@
                 list.innerHTML = '<p class="empty-state">No entries match your search.</p>';
                 return;
             }
+            // add the entries to the list as cards in HTML
             list.innerHTML = entries.map(entry => `
                 <div class="entry-card" id="entry-${entry.id}">
                     <div class="entry-card-header">
@@ -165,6 +178,7 @@
             `).join('');
         }
 
+        // loads the entries from the API for the current user
         async function loadEntries() {
             try {
                 const res = await fetch('/api/entries', { headers: authHeaders() });
@@ -176,6 +190,7 @@
             }
         }
 
+        // asks the API to save the entry
         async function saveEntry() {
             const title = document.getElementById('entry-title').value.trim();
             const content = document.getElementById('entry-content').value.trim();
@@ -191,6 +206,7 @@
                     headers: authHeaders(),
                     body: JSON.stringify({ title, content }),
                 });
+                // if the entry is saved successfully, clear the input fields and reload the entries
                 if (res.ok) {
                     document.getElementById('entry-title').value = '';
                     document.getElementById('entry-content').value = '';
@@ -202,6 +218,7 @@
             }
         }
 
+        // asks the API to delete the entry
         async function deleteEntry(id) {
             await fetch(`/api/entries/${id}`, { method: 'DELETE', headers: authHeaders() });
             allEntries = allEntries.filter(e => e.id !== id);

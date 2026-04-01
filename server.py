@@ -6,17 +6,18 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from upstash_redis import Redis
 
-load_dotenv()
+load_dotenv() # load the environment variables from the .env file
 
 app = Flask(__name__, static_folder=".")
+
+# redis needs a URL and token to connect to the database
 redis = Redis(
     url=os.environ["UPSTASH_REDIS_REST_URL"],
     token=os.environ["UPSTASH_REDIS_REST_TOKEN"],
 )
 
-
+# get the username from the X-Username header in the HTML
 def get_username():
-    """Get the username from the X-Username header."""
     return request.headers.get("X-Username", "").strip() or None
 
 
