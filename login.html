@@ -63,7 +63,7 @@
                         sessionStorage.setItem('credential', response.credential);
 
                         // Move the user into the app after successful sign-in.
-                        globalThis.location.href = 'journal.html';
+                        globalThis.location.href = 'index.html';
                     } catch (error) {
                         console.error('Failed to parse Google credential payload.', error);
                     }
