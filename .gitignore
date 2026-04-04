@@ -1,2 +1,8 @@
 node_modules/
 .env
+.cursor/
+.pytest_cache/
+__pycache__/
+.cursor/settings.json
+.cursor/settings.jsonc
+.cursor/settings.jsonc

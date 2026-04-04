@@ -1,97 +1,109 @@
-# csci3300-project
-
-## Currently hosted on addi.ddns.net
-
 # InSiteful Mind
 
-A web application for users to track and reflect on their mental health day-to-day. The app analyzes key emotional words to chart mental health over time and provides AI-powered, personalized advice based on journal entries, check-ins, and mood reflections.
+InSiteful Mind is a Flask + Upstash Redis web app for lightweight mental-health reflection.
+The current build supports journal entries and three-word reflections, with placeholder pages
+for the questionnaire and trends dashboard.
 
 **Team:** David Pan, Kysen Krishnaswamy, Addison Thurston, Prabhnoor Singh
 
----
+## Current Project State
 
-## Overview
+### Implemented
+- Journal flow: create, list, search, date-filter, and delete entries
+- Three-word reflection flow: mood slider, up to 3 words, save, and recent history view
+- Flask API with Redis-backed per-user data
 
-Unlike apps that only log mood or offer one-time screenings, this app focuses on **improvement and maintenance** of mental health through:
 
-- **Daily journaling** — Process experiences and feelings in writing
-- **Short check-ins** — Quick questionnaires for emotional snapshots
-- **Three-word reflections** — Fast mood capture when time is limited
-- **Long-term trends** — Charts and insights over weeks and months
-- **AI advice** — Personalized suggestions based on entries and trends
+### In Progress / Placeholder
+- `check-in.html` is still a questionnaire placeholder
+- `trends.html` and `index.html` are placeholder/dashboard shells
+- Backend authentication/session validation is not yet implemented
+- AI-powered feedback/advice is not yet implemented
+- Login page with Google credential parsing on the client side
 
----
+## Pages
 
-## Features
+- `login.html` - Google sign-in UI and client-side credential parsing
+- `index.html` - dashboard placeholder and navigation hub
+- `journal.html` - journal entry UI (create/search/filter/delete)
+- `three-word-reflection.html` - mood slider + word selection + history panel
+- `check-in.html` - placeholder for guided questionnaire flow
+- `trends.html` - placeholder for trend analytics
 
-### Journal
-Users can write about difficult or meaningful experiences to process feelings and notice emotional patterns. Entries are saved and can be reviewed. For severe content, the app suggests reaching out to trusted people or professional support.
+## Backend and Data Model
 
-### Daily Check-In
-A short questionnaire records how the user is feeling. Users can skip questions or days. Responses are used to provide tailored feedback.
+The backend is in `server.py` and serves both static files and API routes.
 
-### Three-Word Reflection
-For users short on time: a slider sets general mood (positive to negative), then three words are selected to describe the current emotional state. Users can add custom words or skip when needed.
+- Journal entries are stored in Redis hash keys: `journal:{username}`
+- Reflection check-ins are stored in Redis hash keys: `checkin:{username}`
+- User scoping is currently done with request header `X-Username`
 
-### Long-Term Tracking
-A trends section shows charts of mood, stress, and emotional keywords over time. Patterns help users understand and maintain their mental health. When data is limited, the app still charts what is available.
+This header-based approach is suitable for development/testing only and should be replaced with
+validated backend auth for production.
 
----
+## API Endpoints
 
-## Getting Started
+All API routes require `X-Username`.
+
+- `GET /api/entries` - list all journal entries (newest first)
+- `POST /api/entries` - create journal entry (`content` required, `title` optional)
+- `DELETE /api/entries/<entry_id>` - delete one journal entry
+- `GET /api/checkin` - list check-ins (supports `?limit=<positive-int>`)
+- `POST /api/checkin` - create check-in (`words` 1-3, `moodScore`, `moodLabel`)
+- `DELETE /api/checkin/<checkin_id>` - delete one check-in
+
+## Setup
 
 ### Prerequisites
 - Python 3.x
-- Upstash Redis account
+- Upstash Redis credentials
 
-### Setup
-
-1. **Clone the repository**
+### Installation
+1. Clone the repository:
    ```bash
    git clone https://github.com/AddiThurston/csci3300-project.git
    cd csci3300-project
    ```
-
-2. **Create a virtual environment**
+2. Create and activate a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate   # On Windows: venv\Scripts\activate
+   # Windows (PowerShell)
+   .\venv\Scripts\Activate.ps1
+   # macOS/Linux
+   source venv/bin/activate
    ```
-
-3. **Install dependencies**
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
-4. **Configure environment**
-   Create a `.env` file with:
-   ```
+4. Create `.env` in project root:
+   ```env
    UPSTASH_REDIS_REST_URL=your_redis_url
    UPSTASH_REDIS_REST_TOKEN=your_redis_token
    PORT=3000
    ```
-
-5. **Run the server**
+5. Start the app:
    ```bash
    python server.py
    ```
+6. Open `http://localhost:3000`.
 
-6. Open `http://localhost:3000` in your browser.
+## Testing
 
----
+Test files:
+- `test_journal.py` - journal API behavior tests
+- `test_three.py` - three-word/check-in API behavior tests
+- `test_redis.py` - Redis integration checks
 
-## Project Status
+Run all tests:
+```bash
+pytest -q
+```
 
+## Near-Term Roadmap
 
-| Feature                        | Status      |
-| ------------------------------ | ----------- |
-| Journal (create, view, delete) | Implemented |
-| Google Sign-In                 | In-Progress |
-| Daily Check-In                 | Planned     |
-| Three-Word Reflection          | In-Progress |
-| Long-Term Trends               | Planned     |
-| AI Integration (Gemini)        | Planned     |
-
-
----
+- Implement full questionnaire flow on `check-in.html`
+- Build trends visualizations on `trends.html`
+- Replace header-based identity with backend-validated auth/session
+- Add AI-assisted journal insights once backend auth/data flows are finalized
 

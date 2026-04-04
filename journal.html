@@ -103,8 +103,11 @@
             });
         }
 
+<<<<<<< HEAD
         // The escapeHTML() seems to be missing replacements for double/single quotaion mark. Consider using .replaceAll() 
         // instead of .replace() to make it easier to read. You can easily add new characters as well.
+=======
+>>>>>>> 731cf7f724e5ea35370592b0c3271fae88f61946
         function escapeHtml(str) {
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
@@ -209,10 +212,13 @@
             }
         }
 
+<<<<<<< HEAD
         // The deleteEntry() does not seem to have error handling. If the fetch fails then the
         // entry can still be removed from allEntries and disappear from the UI. Users won't
         // know what happened or confirm that it was deleted. 
         // Use try/catch to handle network failures and tell the user that it was not deleted. 
+=======
+>>>>>>> 731cf7f724e5ea35370592b0c3271fae88f61946
         async function deleteEntry(id) {
             await fetch(`/api/entries/${id}`, { method: 'DELETE', headers: authHeaders() });
             allEntries = allEntries.filter(e => e.id !== id);
