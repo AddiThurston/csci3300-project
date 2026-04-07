@@ -72,12 +72,12 @@
         import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
 
         let currentUsername = localStorage.getItem('username');
-        let encKey = null;
+        let encryptionKey = null;
 
         // Derives the encryption key from the user's Google account ID (or username).
         // Must be called before saving or loading entries.
         async function initEncryption() {
-            encKey = await getEncryptionKey();
+            encryptionKey = await getEncryptionKey();
         }
 
         // Show or hide the username prompt
@@ -188,8 +188,8 @@
                 // Decrypt each entry's title and content before storing in memory
                 allEntries = await Promise.all(raw.map(async entry => ({
                     ...entry,
-                    title: encKey ? await decryptText(encKey, entry.title) : entry.title,
-                    content: encKey ? await decryptText(encKey, entry.content) : entry.content,
+                    title: encryptionKey ? await decryptText(encryptionKey, entry.title) : entry.title,
+                    content: encryptionKey ? await decryptText(encryptionKey, entry.content) : entry.content,
                 })));
                 filterEntries();
             } catch {
@@ -212,8 +212,8 @@
 
             try {
                 // Encrypt title and content in the browser before sending to the server
-                const title = encKey ? await encryptText(encKey, rawTitle || 'Untitled') : rawTitle;
-                const content = encKey ? await encryptText(encKey, rawContent) : rawContent;
+                const title = encryptionKey ? await encryptText(encryptionKey, rawTitle || 'Untitled') : rawTitle;
+                const content = encryptionKey ? await encryptText(encryptionKey, rawContent) : rawContent;
 
                 const res = await fetch('/api/entries', {
                     method: 'POST',

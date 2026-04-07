@@ -101,9 +101,9 @@
         } from "./word-system.js";
         import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
 
-        let encKey = null;
+        let encryptionKey = null;
         async function initEncryption() {
-            encKey = await getEncryptionKey();
+            encryptionKey = await getEncryptionKey();
         }
 
         const moodLevels = [
@@ -286,11 +286,11 @@
             const moodIndex = moodIndexFromScore(moodScore);
 
             // Encrypt the words and mood label before sending to the server
-            const wordsToSend = encKey
-                ? await encryptText(encKey, JSON.stringify(selectedWords))
+            const wordsToSend = encryptionKey
+                ? await encryptText(encryptionKey, JSON.stringify(selectedWords))
                 : selectedWords;
-            const moodLabelToSend = encKey
-                ? await encryptText(encKey, moodLevels[moodIndex])
+            const moodLabelToSend = encryptionKey
+                ? await encryptText(encryptionKey, moodLevels[moodIndex])
                 : moodLevels[moodIndex];
 
             const payload = {
@@ -356,12 +356,12 @@
                         let moodLabel = entry.moodLabel || "Mood";
                         let words = Array.isArray(entry.words) ? entry.words : [];
 
-                        if (encKey) {
+                        if (encryptionKey) {
                             if (typeof entry.moodLabel === "string" && entry.moodLabel.startsWith("enc:")) {
-                                moodLabel = await decryptText(encKey, entry.moodLabel);
+                                moodLabel = await decryptText(encryptionKey, entry.moodLabel);
                             }
                             if (typeof entry.words === "string" && entry.words.startsWith("enc:")) {
-                                try { words = JSON.parse(await decryptText(encKey, entry.words)); }
+                                try { words = JSON.parse(await decryptText(encryptionKey, entry.words)); }
                                 catch { words = []; }
                             }
                         }
