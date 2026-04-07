@@ -99,6 +99,12 @@
             renderSelected,
             selectedWords,
         } from "./word-system.js";
+        import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
+
+        let encKey = null;
+        async function initEncryption() {
+            encKey = await getEncryptionKey();
+        }
 
         const moodLevels = [
             "Abysmal",
@@ -134,6 +140,10 @@
 
         let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
 
+        if (currentUsername) {
+            initEncryption();
+        }
+
         const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
         const moodValue = document.getElementById("mood-value");
@@ -154,12 +164,13 @@
             if (e.key === "Enter") setUsername();
         });
 
-        function setUsername() {
+        async function setUsername() {
             const val = usernameInput.value.trim();
             if (!val) return;
             currentUsername = val;
             localStorage.setItem("username", val);
             usernameOverlay.style.display = "none";
+            await initEncryption();
         }
 
         // kysen code review: authHeaders builds the header object AND reads/parses the session user.
@@ -273,10 +284,19 @@
 
             const moodScore = Number(moodSlider.value);
             const moodIndex = moodIndexFromScore(moodScore);
+
+            // Encrypt the words and mood label before sending to the server
+            const wordsToSend = encKey
+                ? await encryptText(encKey, JSON.stringify(selectedWords))
+                : selectedWords;
+            const moodLabelToSend = encKey
+                ? await encryptText(encKey, moodLevels[moodIndex])
+                : moodLevels[moodIndex];
+
             const payload = {
-                words: selectedWords,
+                words: wordsToSend,
                 moodScore,
-                moodLabel: moodLevels[moodIndex],
+                moodLabel: moodLabelToSend,
             };
 
             try {
@@ -331,17 +351,35 @@
 
                 historyMeta.textContent = `${entries.length} shown of ${total} total`;
                 if (entries.length) {
-                    historyList.innerHTML = entries.map((entry) => {
-                        const words = Array.isArray(entry.words) ? entry.words.map((word) =>
+                    // Decrypt each entry before rendering
+                    const decrypted = await Promise.all(entries.map(async (entry) => {
+                        let moodLabel = entry.moodLabel || "Mood";
+                        let words = Array.isArray(entry.words) ? entry.words : [];
+
+                        if (encKey) {
+                            if (typeof entry.moodLabel === "string" && entry.moodLabel.startsWith("enc:")) {
+                                moodLabel = await decryptText(encKey, entry.moodLabel);
+                            }
+                            if (typeof entry.words === "string" && entry.words.startsWith("enc:")) {
+                                try { words = JSON.parse(await decryptText(encKey, entry.words)); }
+                                catch { words = []; }
+                            }
+                        }
+
+                        return { ...entry, moodLabel, words };
+                    }));
+
+                    historyList.innerHTML = decrypted.map((entry) => {
+                        const wordPills = entry.words.map((word) =>
                             `<span class="success-word-pill">${escapeHtml(word)}</span>`
-                        ).join("") : "";
+                        ).join("");
                         return `
                             <article class="history-item">
                                 <div class="history-row">
-                                    <strong>${escapeHtml(entry.moodLabel || "Mood")}</strong>
+                                    <strong>${escapeHtml(entry.moodLabel)}</strong>
                                     <span class="history-date">${escapeHtml(formatDate(entry.timestamp))}</span>
                                 </div>
-                                <div class="success-words">${words}</div>
+                                <div class="success-words">${wordPills}</div>
                             </article>
                         `;
                     }).join("");

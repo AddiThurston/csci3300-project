@@ -106,4 +106,3 @@ pytest -q
 - Build trends visualizations on `trends.html`
 - Replace header-based identity with backend-validated auth/session
 - Add AI-assisted journal insights once backend auth/data flows are finalized
-
