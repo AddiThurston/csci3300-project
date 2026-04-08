@@ -7,34 +7,347 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Dashboard: orbiting glass bubbles (this page only) */
+        .dashboard-page.container {
+            align-items: center;
+            justify-content: center;
+            padding-top: 28px;
+            padding-bottom: 48px;
+        }
+
+        .bubble-dashboard {
+            width: min(960px, 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bubble-dashboard__intro {
+            text-align: center;
+            max-width: 36rem;
+            margin-bottom: 8px;
+        }
+
+        .bubble-dashboard__intro h1 {
+            margin: 0 0 10px;
+            font-size: clamp(1.55rem, 3.2vw, 2.05rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #f4f7ff;
+        }
+
+        .bubble-dashboard__intro p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .bubble-dashboard__stage {
+            position: relative;
+            width: min(92vw, 480px);
+            aspect-ratio: 1;
+            margin-top: 12px;
+        }
+
+        /* Soft ambient orbs behind the ring */
+        .bubble-dashboard__stage::before,
+        .bubble-dashboard__stage::after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(2px);
+        }
+
+        .bubble-dashboard__stage::before {
+            width: 55%;
+            height: 55%;
+            left: 8%;
+            top: 12%;
+            background: radial-gradient(circle, rgba(95, 140, 255, 0.22), transparent 68%);
+            animation: drift-a 18s ease-in-out infinite alternate;
+        }
+
+        .bubble-dashboard__stage::after {
+            width: 48%;
+            height: 48%;
+            right: 6%;
+            bottom: 14%;
+            background: radial-gradient(circle, rgba(103, 240, 255, 0.18), transparent 70%);
+            animation: drift-b 22s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift-a {
+            from { transform: translate(0, 0) scale(1); opacity: 0.85; }
+            to { transform: translate(12px, 10px) scale(1.06); opacity: 1; }
+        }
+
+        @keyframes drift-b {
+            from { transform: translate(0, 0) scale(1); opacity: 0.75; }
+            to { transform: translate(-14px, -8px) scale(1.08); opacity: 0.95; }
+        }
+
+        .bubble-dashboard__ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(140, 179, 255, 0.12);
+            background: radial-gradient(circle at 50% 50%, rgba(95, 140, 255, 0.06), transparent 55%);
+            box-shadow: inset 0 0 60px rgba(4, 12, 32, 0.35);
+        }
+
+        .bubble-dashboard__core {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: min(42%, 168px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 16px;
+            background: rgba(12, 19, 40, 0.45);
+            border: 1px solid rgba(140, 179, 255, 0.22);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--glow);
+            z-index: 2;
+        }
+
+        .bubble-dashboard__core-inner {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            line-height: 1.45;
+        }
+
+        .bubble-dashboard__core-inner span {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+            color: rgba(156, 176, 210, 0.72);
+        }
+
+        .nav-bubble {
+            --bubble-size: min(28vw, 132px);
+            --orbit-r: min(31vw, 142px);
+            --bubble-c1: rgba(95, 140, 255, 0.52);
+            --bubble-c2: rgba(74, 112, 226, 0.46);
+            --bubble-rim: rgba(204, 222, 255, 0.62);
+            --bubble-glow: rgba(95, 140, 255, 0.34);
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--bubble-size);
+            height: var(--bubble-size);
+            margin: calc(var(--bubble-size) / -2) 0 0 calc(var(--bubble-size) / -2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-decoration: none;
+            color: #eef3ff;
+            font-weight: 700;
+            font-size: clamp(13px, 2.8vw, 15px);
+            line-height: 1.25;
+            padding: 12px;
+            z-index: 3;
+            background:
+                radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.04) 30%, transparent 44%),
+                radial-gradient(circle at 72% 80%, rgba(6, 12, 38, 0.28), transparent 58%),
+                linear-gradient(145deg, var(--bubble-c1), var(--bubble-c2));
+            border: 1px solid var(--bubble-rim);
+            backdrop-filter: blur(14px);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+                0 12px 30px rgba(4, 10, 28, 0.48),
+                0 0 26px var(--bubble-glow);
+            animation: bubble-orbit 56s linear infinite, bubble-pulse 5.2s ease-in-out infinite;
+            transition:
+                transform 0.35s ease,
+                box-shadow 0.35s ease,
+                border-color 0.35s ease,
+                background 0.35s ease,
+                color 0.25s ease;
+        }
+
+        .nav-bubble::after {
+            content: "";
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.02));
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.35s ease;
+        }
+
+        .nav-bubble::before {
+            content: "";
+            position: absolute;
+            top: 14%;
+            left: 18%;
+            width: 32%;
+            height: 20%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.52);
+            filter: blur(1.4px);
+            transform: rotate(-14deg);
+            pointer-events: none;
+        }
+
+        .nav-bubble:hover,
+        .nav-bubble:focus-visible {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.92);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+                0 18px 40px rgba(4, 10, 28, 0.65),
+                0 0 40px var(--bubble-glow);
+            color: #ffffff;
+        }
+
+        .nav-bubble:hover::after,
+        .nav-bubble:focus-visible::after {
+            opacity: 1;
+        }
+
+        .nav-bubble--journal {
+            animation-delay: 0s, -0.4s;
+            --bubble-c1: rgba(255, 142, 209, 0.52);
+            --bubble-c2: rgba(175, 95, 255, 0.48);
+            --bubble-rim: rgba(255, 220, 244, 0.66);
+            --bubble-glow: rgba(210, 121, 255, 0.36);
+        }
+
+        .nav-bubble--checkin {
+            animation-delay: -14s, -1.8s;
+            --bubble-c1: rgba(122, 245, 255, 0.52);
+            --bubble-c2: rgba(67, 176, 255, 0.48);
+            --bubble-rim: rgba(213, 247, 255, 0.66);
+            --bubble-glow: rgba(96, 214, 255, 0.36);
+        }
+
+        .nav-bubble--words {
+            animation-delay: -28s, -3.1s;
+            --bubble-c1: rgba(138, 255, 194, 0.54);
+            --bubble-c2: rgba(70, 212, 165, 0.46);
+            --bubble-rim: rgba(220, 255, 236, 0.68);
+            --bubble-glow: rgba(80, 235, 174, 0.34);
+        }
+
+        .nav-bubble--trends {
+            animation-delay: -42s, -4.2s;
+            --bubble-c1: rgba(255, 204, 120, 0.56);
+            --bubble-c2: rgba(255, 145, 98, 0.48);
+            --bubble-rim: rgba(255, 236, 199, 0.68);
+            --bubble-glow: rgba(255, 170, 104, 0.36);
+        }
+
+        @keyframes bubble-orbit {
+            from {
+                transform: rotate(0deg) translateY(calc(-1 * var(--orbit-r))) rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg) translateY(calc(-1 * var(--orbit-r))) rotate(-360deg);
+            }
+        }
+
+        @keyframes bubble-pulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
+                    0 10px 26px rgba(4, 10, 28, 0.44),
+                    0 0 14px var(--bubble-glow);
+                filter: brightness(0.86) saturate(0.88);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.36) inset,
+                    0 16px 38px rgba(4, 10, 28, 0.62),
+                    0 0 46px var(--bubble-glow);
+                filter: brightness(1.2) saturate(1.2);
+            }
+        }
+
+        @media (min-width: 520px) {
+            .nav-bubble {
+                --orbit-r: 158px;
+                --bubble-size: 136px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .bubble-dashboard__stage::before,
+            .bubble-dashboard__stage::after {
+                animation: none;
+            }
+
+            .nav-bubble {
+                animation: none;
+                transform: rotate(var(--static-angle, 0deg)) translateY(calc(-1 * var(--orbit-r))) rotate(calc(-1 * var(--static-angle, 0deg)));
+            }
+
+            .nav-bubble--journal { --static-angle: 0deg; }
+            .nav-bubble--checkin { --static-angle: 90deg; }
+            .nav-bubble--words { --static-angle: 180deg; }
+            .nav-bubble--trends { --static-angle: 270deg; }
+        }
+    </style>
 </head>
 
 <body>
     <header class="top-bar">
-        <div class="insite-logo"> InSiteful Mind </div>
-        <nav class="wrap row">
+        <div class="insite-logo">InSiteful Mind</div>
+        <nav class="wrap row" aria-label="Quick links">
             <a href="journal.html">
-                <button class="main-button"> Journal </button>
+                <button type="button" class="main-button">Journal</button>
             </a>
             <a href="check-in.html">
-                <button class="main-button"> Check-In </button>
+                <button type="button" class="main-button">Check-In</button>
             </a>
             <a href="three-word-reflection.html">
-                <button class="main-button"> Three-Word </button>
+                <button type="button" class="main-button">Three-Word</button>
             </a>
             <a href="trends.html">
-                <button class="main-button"> Trends </button>
+                <button type="button" class="main-button">Trends</button>
             </a>
         </nav>
     </header>
 
-    <main class="container">
-        <section class="dashboard-placeholder panel">
-            <h1>Trends Dashboard</h1>
-            <p>
-                This section will visualize your emotional trends and check-in data over time.
-                Use the navigation above to keep journaling while analytics modules are being expanded.
-            </p>
+    <main class="container dashboard-page">
+        <section class="bubble-dashboard" aria-labelledby="dash-title">
+            <div class="bubble-dashboard__intro">
+                <h1 id="dash-title">Your space to reflect</h1>
+                <p>
+                    Tap a floating bubble to open a section, or use the bar above. Each area helps you check in,
+                    capture thoughts, and see patterns over time.
+                </p>
+            </div>
+
+            <div class="bubble-dashboard__stage">
+                <div class="bubble-dashboard__ring" aria-hidden="true"></div>
+                <div class="bubble-dashboard__core">
+                    <div class="bubble-dashboard__core-inner">
+                        Navigate
+                        <span>Orbit picks a path</span>
+                    </div>
+                </div>
+                <a class="nav-bubble nav-bubble--journal" href="journal.html">Journal</a>
+                <a class="nav-bubble nav-bubble--checkin" href="check-in.html">Check-In</a>
+                <a class="nav-bubble nav-bubble--words" href="three-word-reflection.html">Three-Word</a>
+                <a class="nav-bubble nav-bubble--trends" href="trends.html">Trends</a>
+            </div>
         </section>
     </main>
 </body>

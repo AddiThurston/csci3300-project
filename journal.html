@@ -66,13 +66,24 @@
         </div>
     </main>
 
-    <script>
+    
+
+    <script type="module">
+        import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
+
         let currentUsername = localStorage.getItem('username');
+        let encryptionKey = null;
+
+        // Derives the encryption key from the user's Google account ID (or username).
+        // Must be called before saving or loading entries.
+        async function initEncryption() {
+            encryptionKey = await getEncryptionKey();
+        }
 
         // Show or hide the username prompt
         if (currentUsername) {
             document.getElementById('username-overlay').style.display = 'none';
-            loadEntries();
+            initEncryption().then(() => loadEntries());
         }
 
         // Press Enter to submit username
@@ -80,12 +91,13 @@
             if (e.key === 'Enter') setUsername();
         });
 
-        function setUsername() {
+        async function setUsername() {
             const val = document.getElementById('username-input').value.trim();
             if (!val) return;
             currentUsername = val;
             localStorage.setItem('username', val);
             document.getElementById('username-overlay').style.display = 'none';
+            await initEncryption();
             loadEntries();
         }
 
@@ -103,6 +115,8 @@
             });
         }
 
+        // The escapeHTML() seems to be missing replacements for double/single quotaion mark. Consider using .replaceAll()
+        // instead of .replace() to make it easier to read. You can easily add new characters as well.
         function escapeHtml(str) {
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
@@ -170,7 +184,13 @@
         async function loadEntries() {
             try {
                 const res = await fetch('/api/entries', { headers: authHeaders() });
-                allEntries = await res.json();
+                const raw = await res.json();
+                // Decrypt each entry's title and content before storing in memory
+                allEntries = await Promise.all(raw.map(async entry => ({
+                    ...entry,
+                    title: encryptionKey ? await decryptText(encryptionKey, entry.title) : entry.title,
+                    content: encryptionKey ? await decryptText(encryptionKey, entry.content) : entry.content,
+                })));
                 filterEntries();
             } catch {
                 document.getElementById('entries-list').innerHTML =
@@ -182,15 +202,19 @@
         // These are three distinct responsibilities — consider extracting clearEntryForm() and
         // keeping saveEntry focused only on the API call.
         async function saveEntry() {
-            const title = document.getElementById('entry-title').value.trim();
-            const content = document.getElementById('entry-content').value.trim();
-            if (!content) return;
+            const rawTitle = document.getElementById('entry-title').value.trim();
+            const rawContent = document.getElementById('entry-content').value.trim();
+            if (!rawContent) return;
 
             const btn = document.getElementById('save-btn');
             btn.disabled = true;
             btn.textContent = 'Saving...';
 
             try {
+                // Encrypt title and content in the browser before sending to the server
+                const title = encryptionKey ? await encryptText(encryptionKey, rawTitle || 'Untitled') : rawTitle;
+                const content = encryptionKey ? await encryptText(encryptionKey, rawContent) : rawContent;
+
                 const res = await fetch('/api/entries', {
                     method: 'POST',
                     headers: authHeaders(),
@@ -207,11 +231,21 @@
             }
         }
 
+        // The deleteEntry() does not seem to have error handling. If the fetch fails then the
+        // entry can still be removed from allEntries and disappear from the UI. Users won't
+        // know what happened or confirm that it was deleted.
+        // Use try/catch to handle network failures and tell the user that it was not deleted.
         async function deleteEntry(id) {
             await fetch(`/api/entries/${id}`, { method: 'DELETE', headers: authHeaders() });
             allEntries = allEntries.filter(e => e.id !== id);
             filterEntries();
         }
+
+        // Module functions are not global, so expose the ones used by onclick attributes in HTML
+        window.setUsername = setUsername;
+        window.saveEntry = saveEntry;
+        window.deleteEntry = deleteEntry;
+        window.filterEntries = filterEntries;
     </script>
 </body>
 

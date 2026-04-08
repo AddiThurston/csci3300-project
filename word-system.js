@@ -1,7 +1,7 @@
 export let selectedWords = [];
 let currentCategory = null;
 
-export const WORD_BANK = [
+export const WORD_BANK = [ // Good job fixing the word bank duplication, it helps fulfill SRS!
     // Positive
     { word: "Happy",      cat: "positive" },
     { word: "Grateful",   cat: "positive" },
@@ -60,6 +60,7 @@ export function renderWordGrid() {
     const grid = document.getElementById('word-grid');
     const visible = currentCategory ? WORD_BANK.filter(w => w.cat === currentCategory) : WORD_BANK;
 
+    // This is good but I think some error handling would be nice in case something goes wrong
     grid.innerHTML = visible.map(({ word }) => {
         const isSelected = selectedWords.includes(word);
         const isDisabled = !isSelected && selectedWords.length >= 3;

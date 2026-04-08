@@ -6,18 +6,18 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from upstash_redis import Redis
 
-load_dotenv()
+load_dotenv() # load the environment variables from the .env file
 
 app = Flask(__name__, static_folder=".")
+
+# redis needs a URL and token to connect to the database
 redis = Redis(
     url=os.environ["UPSTASH_REDIS_REST_URL"],
     token=os.environ["UPSTASH_REDIS_REST_TOKEN"],
 )
 
-
-
+# get the username from the X-Username header in the HTML
 def get_username():
-    """Get the username from the X-Username header."""
     return request.headers.get("X-Username", "").strip() or None
 
 
@@ -119,12 +119,32 @@ def get_checkins():
     if not username:
         return jsonify({"error": "Username required"}), 401
 
+    limit_raw = request.args.get("limit")
+    limit = None
+    if limit_raw is not None:
+        try:
+            limit = int(limit_raw)
+            if limit < 1:
+                raise ValueError
+        except ValueError:
+            return jsonify({"error": "limit must be a positive integer"}), 400
+
     data = redis.hgetall(f"checkin:{username}")
     if not data:
-        return jsonify([])
+        return jsonify({"entries": [], "total": 0, "hasMore": False})
 
     entries = [json.loads(v) for v in data.values()]
     entries.sort(key=lambda e: e["timestamp"], reverse=True)
+
+    if limit is not None:
+        total = len(entries)
+        limited_entries = entries[:limit]
+        return jsonify({
+            "entries": limited_entries,
+            "total": total,
+            "hasMore": total > limit,
+        })
+
     return jsonify(entries)
 
 
