@@ -56,6 +56,8 @@ def create_entry():
     if not content:
         return jsonify({"error": "Content is required"}), 400
 
+    # kysen code review: This function validates input, builds the entry dict, AND persists it.
+    # Consider extracting build_entry(body) and save_entry(username, entry) as separate helpers.
     entry = {
         "id": str(int(time.time() * 1000)),
         "title": (body.get("title") or "Untitled").strip(),
@@ -90,6 +92,9 @@ def create_checkin():
     mood_score = body.get("moodScore")
     mood_label = body.get("moodLabel", "")
 
+    # kysen code review: Validation, entry construction, and persistence are all mixed here.
+    # Same pattern as create_entry — extract validate_checkin(body), build_checkin(body),
+    # and save_checkin(username, entry) to give each step a single responsibility.
     if not words or not isinstance(words, list) or len(words) > 3:
         return jsonify({"error": "Provide 1–3 words"}), 400
     if mood_score is None or not isinstance(mood_score, (int, float)):
@@ -152,6 +157,63 @@ def delete_checkin(checkin_id):
 
     redis.hdel(f"checkin:{username}", checkin_id)
     return jsonify({"success": True})
+
+
+QUESTIONNAIRE_QUESTION_IDS = {
+    "mood", "sleep", "energy", "calm", "connection", "motivation",
+    "focus", "responsibilities", "hope", "anxiety_free", "progress",
+    "physical", "grounded",
+}
+
+
+# POST /api/questionnaire — save a check-in questionnaire response
+@app.post("/api/questionnaire")
+def create_questionnaire():
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
+
+    body = request.get_json() or {}
+    responses = body.get("responses")
+
+    if not isinstance(responses, dict):
+        return jsonify({"error": "responses object is required"}), 400
+
+    cleaned = {}
+    for qid, score in responses.items():
+        if qid not in QUESTIONNAIRE_QUESTION_IDS:
+            return jsonify({"error": f"Unknown question id: {qid}"}), 400
+        if not isinstance(score, (int, float)) or not (1 <= int(score) <= 5):
+            return jsonify({"error": f"Score for '{qid}' must be 1–5"}), 400
+        cleaned[qid] = int(score)
+
+    if len(cleaned) != len(QUESTIONNAIRE_QUESTION_IDS):
+        return jsonify({"error": "All questions must be answered"}), 400
+
+    entry = {
+        "id": str(int(time.time() * 1000)),
+        "responses": cleaned,
+        "timestamp": int(time.time() * 1000),
+    }
+
+    redis.hset(f"questionnaire:{username}", entry["id"], json.dumps(entry))
+    return jsonify(entry), 201
+
+
+# GET /api/questionnaire — fetch all questionnaire responses for a user
+@app.get("/api/questionnaire")
+def get_questionnaires():
+    username = get_username()
+    if not username:
+        return jsonify({"error": "Username required"}), 401
+
+    data = redis.hgetall(f"questionnaire:{username}")
+    if not data:
+        return jsonify([])
+
+    entries = [json.loads(v) for v in data.values()]
+    entries.sort(key=lambda e: e["timestamp"], reverse=True)
+    return jsonify(entries)
 
 
 if __name__ == "__main__":

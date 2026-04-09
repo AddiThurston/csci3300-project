@@ -99,6 +99,12 @@
             renderSelected,
             selectedWords,
         } from "./word-system.js";
+        import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
+
+        let encryptionKey = null;
+        async function initEncryption() {
+            encryptionKey = await getEncryptionKey();
+        }
 
         const moodLevels = [
             "Abysmal",
@@ -256,6 +262,10 @@
                 });
         }
 
+
+        // kysen code review: submitCheckin manages button UI state, builds the payload, makes the API call,
+        // and calls showSuccess. Consider extracting buildCheckinPayload() and letting
+        // submitCheckin focus only on the fetch + error handling.
         async function submitCheckin() {
             if (selectedWords.length === 0) return;
             const btn = document.getElementById("submit-btn");
@@ -264,6 +274,15 @@
 
             const moodScore = Number(moodSlider.value);
             const moodIndex = moodIndexFromScore(moodScore);
+
+            // Encrypt the words and mood label before sending to the server
+            const wordsToSend = encryptionKey
+                ? await encryptText(encryptionKey, JSON.stringify(selectedWords))
+                : selectedWords;
+            const moodLabelToSend = encryptionKey
+                ? await encryptText(encryptionKey, moodLevels[moodIndex])
+                : moodLevels[moodIndex];
+
             const payload = {
                 words: selectedWords,
                 moodScore,
