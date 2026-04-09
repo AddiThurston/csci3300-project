@@ -307,15 +307,27 @@
 </head>
 
 <body>
+    <!-- Check-in questionnaire modal -->
+    <div class="username-overlay" id="questionnaire-overlay" style="display:none;z-index:200;align-items:flex-start;padding:24px 0;overflow-y:auto;">
+        <div class="panel" style="width:min(520px,94vw);padding:32px 28px;text-align:left;margin:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+                <h2 style="margin:0;font-size:20px;">Check-In</h2>
+                <button onclick="dismissQuestionnaire()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 0 0 12px;" title="Close">&times;</button>
+            </div>
+            <p style="margin:0 0 28px;color:var(--muted);font-size:14px;">Rate each area from 1 (very low) to 5 (great).</p>
+            <div id="q-questions-list"></div>
+            <p id="q-error" style="display:none;color:var(--danger);font-size:13px;margin:0 0 16px;">Please answer all questions before saving.</p>
+            <button class="main-button full-width" onclick="submitQuestionnaire()">Save Check-In</button>
+        </div>
+    </div>
+
     <header class="top-bar">
         <div class="insite-logo">InSiteful Mind</div>
         <nav class="wrap row" aria-label="Quick links">
             <a href="journal.html">
                 <button type="button" class="main-button">Journal</button>
             </a>
-            <a href="check-in.html">
-                <button type="button" class="main-button">Check-In</button>
-            </a>
+            <button type="button" class="main-button" onclick="openQuestionnaire()">Check-In</button>
             <a href="three-word-reflection.html">
                 <button type="button" class="main-button">Three-Word</button>
             </a>
@@ -344,12 +356,109 @@
                     </div>
                 </div>
                 <a class="nav-bubble nav-bubble--journal" href="journal.html">Journal</a>
-                <a class="nav-bubble nav-bubble--checkin" href="check-in.html">Check-In</a>
+                <a class="nav-bubble nav-bubble--checkin" href="#" onclick="event.preventDefault();openQuestionnaire()">Check-In</a>
                 <a class="nav-bubble nav-bubble--words" href="three-word-reflection.html">Three-Word</a>
                 <a class="nav-bubble nav-bubble--trends" href="trends.html">Trends</a>
             </div>
         </section>
     </main>
+    <script>
+        const QUESTIONS = [
+            { id: 'mood',             label: 'How would you rate your overall mood today?' },
+            { id: 'sleep',            label: 'How well have you been sleeping?' },
+            { id: 'energy',           label: 'How is your energy level?' },
+            { id: 'calm',             label: 'How calm and relaxed do you feel?' },
+            { id: 'connection',       label: 'How connected do you feel to others?' },
+            { id: 'motivation',       label: 'How motivated do you feel?' },
+            { id: 'focus',            label: 'How well are you able to focus?' },
+            { id: 'responsibilities', label: 'How well are you managing your daily responsibilities?' },
+            { id: 'hope',             label: 'How hopeful do you feel about the future?' },
+            { id: 'anxiety_free',     label: 'How free from worry or anxiety do you feel?' },
+            { id: 'progress',         label: 'How satisfied are you with your recent progress?' },
+            { id: 'physical',         label: 'How well are you taking care of your physical health?' },
+            { id: 'grounded',         label: 'How present and grounded do you feel?' },
+        ];
+
+        const SCALE_LABELS = { 1: 'Very Low', 2: 'Low', 3: 'Moderate', 4: 'Good', 5: 'Great' };
+
+        let qResponses = {};
+
+        function renderQuestionnaire() {
+            qResponses = {};
+            const list = document.getElementById('q-questions-list');
+            list.innerHTML = QUESTIONS.map((q, i) => `
+                <div style="margin-bottom:24px;">
+                    <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:var(--text);">
+                        ${i + 1}. ${q.label}
+                    </p>
+                    <div style="display:flex;gap:8px;">
+                        ${[1,2,3,4,5].map(n => `
+                            <button
+                                id="q-btn-${q.id}-${n}"
+                                onclick="selectResponse('${q.id}', ${n})"
+                                style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);
+                                       background:rgba(8,14,31,.45);color:var(--muted);font-size:13px;
+                                       font-weight:600;cursor:pointer;transition:all .15s;"
+                                onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'"
+                                onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'"
+                            >${n}<br><span style="font-size:10px;font-weight:400;">${SCALE_LABELS[n]}</span></button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectResponse(questionId, value) {
+            qResponses[questionId] = value;
+            [1,2,3,4,5].forEach(n => {
+                const btn = document.getElementById(`q-btn-${questionId}-${n}`);
+                if (n === value) {
+                    btn.style.background = 'linear-gradient(135deg,var(--primary),var(--primary-dark))';
+                    btn.style.borderColor = 'var(--primary)';
+                    btn.style.color = '#fff';
+                    btn.dataset.selected = '1';
+                } else {
+                    btn.style.background = 'rgba(8,14,31,.45)';
+                    btn.style.borderColor = 'var(--line)';
+                    btn.style.color = 'var(--muted)';
+                    delete btn.dataset.selected;
+                }
+            });
+            document.getElementById('q-error').style.display = 'none';
+        }
+
+        function openQuestionnaire() {
+            renderQuestionnaire();
+            document.getElementById('q-error').style.display = 'none';
+            const overlay = document.getElementById('questionnaire-overlay');
+            overlay.style.display = 'flex';
+            overlay.scrollTop = 0;
+        }
+
+        function dismissQuestionnaire() {
+            document.getElementById('questionnaire-overlay').style.display = 'none';
+        }
+
+        async function submitQuestionnaire() {
+            const unanswered = QUESTIONS.filter(q => !(q.id in qResponses));
+            if (unanswered.length > 0) {
+                document.getElementById('q-error').style.display = 'block';
+                return;
+            }
+            const username = localStorage.getItem('username');
+            if (!username) return;
+            try {
+                await fetch('/api/questionnaire', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Username': username },
+                    body: JSON.stringify({ responses: qResponses }),
+                });
+            } catch {
+                // silently fail
+            }
+            dismissQuestionnaire();
+        }
+    </script>
 </body>
 
 </html>
