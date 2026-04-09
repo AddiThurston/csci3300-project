@@ -1,53 +1,705 @@
 <!doctype html>
-<!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
-<!-- WIP -->
+<!-- InSiteful Mind - Trends Page -->
 <html lang="en">
 
 <head>
-    <!-- Meta tags, title, and link to stylesheet -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Trends</title>
+
     <link rel="stylesheet" href="styles.css" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .trends-shell {
+            width: min(1120px, 100%);
+        }
+
+        .trends-panel {
+            position: relative;
+            overflow: hidden;
+            padding: 30px;
+            background:
+                radial-gradient(circle at top right, rgba(103, 240, 255, 0.14), transparent 28%),
+                radial-gradient(circle at left center, rgba(95, 140, 255, 0.18), transparent 34%),
+                var(--surface);
+        }
+
+        .trends-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 26%);
+        }
+
+        .trends-content {
+            position: relative;
+            display: grid;
+            gap: 24px;
+        }
+
+        .trends-hero {
+            display: block;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(156, 176, 210, 0.16);
+        }
+
+        .trends-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid rgba(103, 240, 255, 0.2);
+            border-radius: 999px;
+            background: rgba(10, 17, 37, 0.68);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .trends-hero h1 {
+            margin: 14px 0 10px;
+            font-size: clamp(2rem, 4vw, 3.1rem);
+            line-height: 1.05;
+        }
+
+        .trends-hero p {
+            margin: 0;
+            max-width: 640px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(156, 176, 210, 0.18);
+            background: linear-gradient(180deg, rgba(17, 27, 57, 0.92), rgba(10, 16, 35, 0.88));
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+        }
+
+        .metric-label {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            margin: 0;
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .metric-detail {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .trend-up .metric-value {
+            color: #7bf3b0;
+        }
+
+        .trend-down .metric-value {
+            color: #ff8a9d;
+        }
+
+        .trend-flat .metric-value {
+            color: #ffd978;
+        }
+
+        .trend-card {
+            padding: 22px;
+            border-radius: 22px;
+            border: 1px solid rgba(156, 176, 210, 0.18);
+            background: rgba(9, 15, 33, 0.74);
+        }
+
+        .trend-card h2 {
+            margin: 0 0 8px;
+            font-size: 1.2rem;
+        }
+
+        .chart-card-header {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .chart-card-header h2 {
+            margin-bottom: 6px;
+        }
+
+        .trend-card-subtitle {
+            margin: 0 0 18px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .chart-controls {
+            display: grid;
+            gap: 8px;
+            min-width: 220px;
+        }
+
+        .chart-controls label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .chart-select {
+            border: 1px solid rgba(156, 176, 210, 0.2);
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: rgba(8, 13, 29, 0.82);
+            color: #f5f8ff;
+            font: inherit;
+        }
+
+        .chart-select:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .chart-placeholder-note {
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .chart-frame {
+            padding: 26px 18px 18px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(156, 176, 210, 0.12);
+            min-height: 340px;
+        }
+
+        .chart-frame canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+        }
+
+        .emotions-card {
+            display: grid;
+            gap: 16px;
+        }
+
+        .emotion-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .emotion-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(95, 140, 255, 0.12);
+            border: 1px solid rgba(95, 140, 255, 0.18);
+            color: #f5f8ff;
+            font-weight: 600;
+        }
+
+        .emotion-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: rgba(103, 240, 255, 0.14);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            display: grid;
+            place-items: center;
+            text-align: center;
+            gap: 12px;
+            min-height: 300px;
+            padding: 24px;
+            border-radius: 18px;
+            border: 1px dashed rgba(156, 176, 210, 0.22);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .empty-state strong {
+            font-size: 1.15rem;
+        }
+
+        .empty-state p {
+            margin: 0;
+            max-width: 420px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 980px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+        }
+
+        @media (max-width: 760px) {
+            .trends-panel {
+                padding: 22px;
+            }
+
+            .chart-card-header {
+                flex-direction: column;
+            }
+
+            .chart-controls {
+                min-width: 0;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-frame {
+                min-height: 280px;
+                padding: 22px 14px 14px;
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <div class="username-overlay" id="username-overlay">
+        <div class="username-card panel">
+            <h2>Welcome</h2>
+            <p>Enter a username to load your trends.</p>
+            <input type="text" id="username-input" placeholder="Username" />
+            <button class="main-button full-width" onclick="setUsername()">Continue</button>
+        </div>
+    </div>
+
     <header class="top-bar">
         <div class="insite-logo"> InSiteful Mind </div>
         <nav class="wrap row">
-            <!-- Navigation buttons -->
-            <a href="journal.html">
-                <button class="main-button"> Journal </button>
-            </a>
-            <a href="check-in.html">
-                <button class="main-button"> Check-In </button>
-            </a>
-            <a href="three-word-reflection.html">
-                <button class="main-button"> Three-Word </button>
-            </a>
-            <a href="trends.html">
-                <button class="main-button"> Trends </button>
-            </a>
+            <a href="journal.html"><button class="main-button">Journal</button></a>
+            <a href="check-in.html"><button class="main-button">Check-In</button></a>
+            <a href="three-word-reflection.html"><button class="main-button">Three-Word</button></a>
+            <a href="trends.html"><button class="main-button">Trends</button></a>
         </nav>
     </header>
 
-    <main class="container">
-        <section class="placeholder-shell panel">
-            <h1>Trends Coming Soon</h1>
-            <p>
-                This page will display mood history, emotional keyword patterns, and long-term wellbeing insights.
-                Placeholder content is in place so the page is ready for future chart and analytics implementation.
-            </p>
-            <div class="button-row">
-                <a href="journal.html">
-                    <button class="main-button">Go to Journal</button>
-                </a>
-                <a href="three-word-reflection.html">
-                    <button class="main-button">Try Three-Word Check-In</button>
-                </a>
+    <main class="container container-top">
+        <section class="trends-shell panel trends-panel">
+            <div class="trends-content">
+                <div class="trends-hero">
+                    <div>
+                        <div class="trends-kicker">Mood analytics</div>
+                        <h1>Track how your mood fluctuates over time.</h1>
+                    </div>
+                </div>
+
+                <section class="metrics-grid">
+                    <article class="metric-card">
+                        <p class="metric-label">Average mood</p>
+                        <p class="metric-value" id="avgMood">--</p>
+                        <p class="metric-detail" id="avgMoodDetail">This will update as you add more check-ins.</p>
+                    </article>
+                    <article class="metric-card">
+                        <p class="metric-label">Total check-ins</p>
+                        <p class="metric-value" id="checkinCount">0</p>
+                        <p class="metric-detail" id="checkinCountDetail">Build a clearer picture by checking in regularly.</p>
+                    </article>
+                    <article class="metric-card" id="trendCard">
+                        <p class="metric-label">Weekly direction</p>
+                        <p class="metric-value" id="trendValue">--</p>
+                        <p class="metric-detail" id="trendDirection">Need at least 14 check-ins for a weekly comparison.</p>
+                    </article>
+                    <article class="metric-card">
+                        <p class="metric-label">Range</p>
+                        <p class="metric-value" id="bestWorst">--</p>
+                        <p class="metric-detail" id="bestWorstDetail">Your highest and lowest mood scores will appear here.</p>
+                    </article>
+                </section>
+
+                <article class="trend-card">
+                    <div class="chart-card-header">
+                        <div>
+                            <h2>Mood Over Time</h2>
+                            <p class="trend-card-subtitle">Track your recorded mood score across recent check-ins.</p>
+                        </div>
+                        <div class="chart-controls">
+                            <label for="chartMode">Display by</label>
+                            <select id="chartMode" class="chart-select" disabled>
+                                <option value="score" selected>Mood score</option>
+                                <option value="label">Mood label (coming soon)</option>
+                            </select>
+                            <p class="chart-placeholder-note">Display by feature will be available soon.</p>
+                        </div>
+                    </div>
+                    <div class="chart-frame" id="chartFrame">
+                        <canvas id="moodChart"></canvas>
+                    </div>
+                </article>
+
+                <article class="trend-card emotions-card">
+                    <div>
+                        <h2>Top Emotions</h2>
+                        <p class="trend-card-subtitle">The words that appear most often in your check-ins.</p>
+                    </div>
+                    <ul class="emotion-list" id="topWords"></ul>
+                </article>
             </div>
         </section>
     </main>
+
+    <script type="module">
+        const topWordsList = document.getElementById("topWords");
+        const chartFrame = document.getElementById("chartFrame");
+        const trendCard = document.getElementById("trendCard");
+        const usernameOverlay = document.getElementById("username-overlay");
+        const usernameInput = document.getElementById("username-input");
+
+        let moodChart = null;
+        let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
+
+        if (currentUsername) {
+            usernameOverlay.style.display = "none";
+        }
+
+        usernameInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") setUsername();
+        });
+
+        function getSessionUser() {
+            try {
+                return JSON.parse(sessionStorage.getItem("user") || "null");
+            } catch {
+                return null;
+            }
+        }
+
+        function deriveUsernameFromUser(user) {
+            if (!user || typeof user !== "object") return "";
+            return (user.email || user.name || user.sub || "").toString().trim();
+        }
+
+        function authHeaders() {
+            const headers = {
+                "Content-Type": "application/json",
+                "X-Username": currentUsername || "",
+            };
+
+            const sessionUser = getSessionUser();
+            if (sessionUser) {
+                headers["X-User-Info"] = JSON.stringify(sessionUser);
+            }
+
+            return headers;
+        }
+
+        function formatDate(ts) {
+            return new Date(ts).toLocaleDateString();
+        }
+
+        function formatLongDate(ts) {
+            return new Date(ts).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+            });
+        }
+
+        function moodLabelFromScore(score) {
+            const moodLevels = ["Abysmal", "Rough", "Low", "Okay", "Good", "Great", "Exceptional"];
+            const index = Math.max(0, Math.min(moodLevels.length - 1, Math.round((Number(score) / 100) * (moodLevels.length - 1))));
+            return moodLevels[index];
+        }
+
+        function resetDashboard() {
+            trendCard.classList.remove("trend-up", "trend-down", "trend-flat");
+            document.getElementById("avgMood").textContent = "--";
+            document.getElementById("avgMoodDetail").textContent = "We will calculate this as soon as check-ins appear.";
+            document.getElementById("checkinCount").textContent = "0";
+            document.getElementById("checkinCountDetail").textContent = "Build a clearer picture by checking in regularly.";
+            document.getElementById("trendValue").textContent = "--";
+            document.getElementById("trendDirection").textContent = "Need at least 14 check-ins for a weekly comparison.";
+            document.getElementById("bestWorst").textContent = "--";
+            document.getElementById("bestWorstDetail").textContent = "Your highest and lowest mood scores will appear here.";
+            chartFrame.innerHTML = `
+                <div class="empty-state">
+                    <strong>No check-ins yet</strong>
+                    <p>Your mood chart will appear here after you add a few check-ins.</p>
+                </div>
+            `;
+            topWordsList.innerHTML = `
+                <li class="emotion-chip">
+                    <span>No emotions logged yet</span>
+                    <span class="emotion-count">0</span>
+                </li>
+            `;
+            if (moodChart) {
+                moodChart.destroy();
+                moodChart = null;
+            }
+        }
+
+        function renderDashboard(checkins) {
+            const sortedCheckins = [...checkins].sort((a, b) => a.timestamp - b.timestamp);
+
+            const moodData = sortedCheckins.map(c => ({
+                date: formatDate(c.timestamp),
+                mood: c.moodScore
+            }));
+
+            topWordsList.innerHTML = "";
+            chartFrame.innerHTML = `<canvas id="moodChart"></canvas>`;
+
+            if (sortedCheckins.length === 0) {
+                resetDashboard();
+                return;
+            }
+
+            const avgMood = sortedCheckins.reduce((sum, c) => sum + c.moodScore, 0) / sortedCheckins.length;
+            const scores = sortedCheckins.map(c => c.moodScore);
+            const best = Math.max(...scores);
+            const worst = Math.min(...scores);
+
+            // Average Mood
+            document.getElementById("avgMood").textContent = avgMood.toFixed(1);
+            document.getElementById("avgMoodDetail").textContent =
+                avgMood >= 7
+                    ? "Your average suggests a positive outlook."
+                    : avgMood >= 5
+                        ? "Your average suggests a balanced recent mood."
+                        : "Your average suggests a negative recent mood.";
+
+            // Check-in
+            document.getElementById("checkinCount").textContent = String(sortedCheckins.length);
+            document.getElementById("checkinCountDetail").textContent =
+                `From ${moodData[0].date} to ${moodData[moodData.length - 1].date}`;
+
+            // Best/Worst
+            document.getElementById("bestWorst").textContent = ` ${worst} / ${best}`;
+            document.getElementById("bestWorstDetail").textContent =
+                `Lowest mood ${worst}, Highest mood ${best}.`;
+
+            // Weekly trend
+            if (sortedCheckins.length >= 14) {
+                const last7 = sortedCheckins.slice(-7);
+                const prev7 = sortedCheckins.slice(-14, -7);
+                const average = arr => arr.reduce((s, c) => s + c.moodScore, 0) / arr.length;
+                const recentAvg = average(last7);
+                const previousAvg = average(prev7);
+                const diff = recentAvg - previousAvg;
+
+                let trendLabel = "Stable";
+                let trendText = "Your last 7 check-ins are holding fairly steady compared with the previous 7.";
+                let trendClass = "trend-flat";
+
+                if (diff > 0.2) {
+                    trendLabel = "Improving";
+                    trendText = `Your last 7 check-ins improved by ${diff.toFixed(1)} points compared to the previous 7.`;
+                    trendClass = "trend-up";
+                } else if (diff < -0.2) {
+                    trendLabel = "Declining";
+                    trendText = `Your last 7 check-ins dipped by ${Math.abs(diff).toFixed(1)} points compared to the previous 7.`;
+                    trendClass = "trend-down";
+                }
+
+                trendCard.classList.add(trendClass);
+                document.getElementById("trendValue").textContent = trendLabel;
+                document.getElementById("trendDirection").textContent = trendText;
+            } else {
+                document.getElementById("trendValue").textContent = "--";
+            }
+
+            const wordCounts = {};
+
+            sortedCheckins.forEach(c => {
+                (c.words || []).forEach(word => {
+                    const normalizedWord = word.toLowerCase().trim();
+                    wordCounts[normalizedWord] = (wordCounts[normalizedWord] || 0) + 1;
+                });
+            });
+
+            const topWords = Object.entries(wordCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            if (topWords.length === 0) {
+                topWordsList.innerHTML = `
+                    <li class="emotion-chip">
+                        <span>No emotions logged yet</span>
+                        <span class="emotion-count">0</span>
+                    </li>
+                `;
+                return;
+            }
+
+            topWords.forEach(([word, count]) => {
+                const li = document.createElement("li");
+                li.className = "emotion-chip";
+                li.innerHTML = `<span>${word}</span><span class="emotion-count">${count}</span>`;
+                topWordsList.appendChild(li);
+            });
+            const ctx = document.getElementById("moodChart").getContext("2d");
+            const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+            gradient.addColorStop(0, "rgba(103, 240, 255, 0.35)");
+            gradient.addColorStop(1, "rgba(103, 240, 255, 0.02)");
+
+            if (moodChart) {
+                moodChart.destroy();
+            }
+
+            moodChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: moodData.map((entry) => entry.date),
+                    datasets: [{
+                        label: "Mood Score",
+                        data: moodData.map((entry) => entry.mood),
+                        fill: true,
+                        backgroundColor: gradient,
+                        borderColor: "#67f0ff",
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: "#f6f9ff",
+                        pointBorderColor: "#67f0ff",
+                        pointBorderWidth: 2,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#e9f0ff"
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title(tooltipItems) {
+                                    const point = sortedCheckins[tooltipItems[0].dataIndex];
+                                    return formatLongDate(point.timestamp);
+                                },
+                                label(context) {
+                                    const point = sortedCheckins[context.dataIndex];
+                                    return `Mood score: ${point.moodScore}`;
+                                },
+                                afterLabel(context) {
+                                    const point = sortedCheckins[context.dataIndex];
+                                    const lines = [`Mood label: ${moodLabelFromScore(point.moodScore)}`];
+                                    const words = Array.isArray(point.words) ? point.words.filter(Boolean) : [];
+                                    if (words.length > 0) {
+                                        lines.push(`Words: ${words.join(", ")}`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#9cb0d2"
+                            },
+                            grid: {
+                                color: "rgba(156, 176, 210, 0.1)"
+                            }
+                        },
+                        y: {
+                            suggestedMin: 1,
+                            suggestedMax: 100,
+                            ticks: {
+                                stepSize: 10,
+                                color: "#9cb0d2",
+                            },
+                            grid: {
+                                color: "rgba(156, 176, 210, 0.1)"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadTrends() {
+            if (!currentUsername) {
+                resetDashboard();
+                usernameOverlay.style.display = "flex";
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/checkin", {
+                    method: "GET",
+                    headers: authHeaders(),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to load check-ins");
+                }
+
+                const data = await response.json();
+                const checkins = Array.isArray(data) ? data : Array.isArray(data.entries) ? data.entries : [];
+                renderDashboard(checkins);
+            } catch {
+                resetDashboard();
+            }
+        }
+
+        async function setUsername() {
+            const value = usernameInput.value.trim();
+            if (!value) return;
+            currentUsername = value;
+            localStorage.setItem("username", value);
+            usernameOverlay.style.display = "none";
+            await loadTrends();
+        }
+
+        globalThis.setUsername = setUsername;
+
+        resetDashboard();
+        loadTrends();
+    </script>
 </body>
 
 </html>

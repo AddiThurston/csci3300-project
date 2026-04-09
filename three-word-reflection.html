@@ -30,7 +30,7 @@
     </header>
 
     <main class="container container-top mood-page">
-        <! While it works, I think it would be better for this to be a section instead of a div since it is a distinct part of the page>
+        <! While this works fine, I think it would be better for this to be a section instead of a div since it is a distinct part of the page>
         <div class="checkin-wrapper">
             <section class="mood-slider-block panel">
                 <div class="mood-slider-header">
@@ -99,12 +99,6 @@
             renderSelected,
             selectedWords,
         } from "./word-system.js";
-        import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
-
-        let encKey = null;
-        async function initEncryption() {
-            encKey = await getEncryptionKey();
-        }
 
         const moodLevels = [
             "Abysmal",
@@ -140,10 +134,6 @@
 
         let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
 
-        if (currentUsername) {
-            initEncryption();
-        }
-
         const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
         const moodValue = document.getElementById("mood-value");
@@ -164,18 +154,14 @@
             if (e.key === "Enter") setUsername();
         });
 
-        async function setUsername() {
+        function setUsername() {
             const val = usernameInput.value.trim();
             if (!val) return;
             currentUsername = val;
             localStorage.setItem("username", val);
             usernameOverlay.style.display = "none";
-            await initEncryption();
         }
 
-        // kysen code review: authHeaders builds the header object AND reads/parses the session user.
-        // getSessionUser() is already extracted — consider keeping authHeaders() a pure
-        // header assembler and passing the user in as a parameter instead.
         function authHeaders() {
             const headers = {
                 "Content-Type": "application/json",
@@ -238,9 +224,6 @@
             return interpolateColor(moodColors[lower], moodColors[upper], scaled - lower);
         }
 
-        // kysen code review: updateMoodLabel updates the label text, sets a CSS variable, AND repositions
-        // the label element. Each of those is a separate concern — consider splittin into
-        // updateMoodText(score) and updateMoodLabelPosition(score).
         function updateMoodLabel() {
             const score = Number(moodSlider.value);
 
@@ -273,9 +256,6 @@
                 });
         }
 
-        // kysen code review: submitCheckin manages button UI state, builds the payload, makes the API call,
-        // and calls showSuccess. Consider extracting buildCheckinPayload() and letting
-        // submitCheckin focus only on the fetch + error handling.
         async function submitCheckin() {
             if (selectedWords.length === 0) return;
             const btn = document.getElementById("submit-btn");
@@ -284,19 +264,10 @@
 
             const moodScore = Number(moodSlider.value);
             const moodIndex = moodIndexFromScore(moodScore);
-
-            // Encrypt the words and mood label before sending to the server
-            const wordsToSend = encKey
-                ? await encryptText(encKey, JSON.stringify(selectedWords))
-                : selectedWords;
-            const moodLabelToSend = encKey
-                ? await encryptText(encKey, moodLevels[moodIndex])
-                : moodLevels[moodIndex];
-
             const payload = {
-                words: wordsToSend,
+                words: selectedWords,
                 moodScore,
-                moodLabel: moodLabelToSend,
+                moodLabel: moodLevels[moodIndex],
             };
 
             try {
@@ -351,35 +322,17 @@
 
                 historyMeta.textContent = `${entries.length} shown of ${total} total`;
                 if (entries.length) {
-                    // Decrypt each entry before rendering
-                    const decrypted = await Promise.all(entries.map(async (entry) => {
-                        let moodLabel = entry.moodLabel || "Mood";
-                        let words = Array.isArray(entry.words) ? entry.words : [];
-
-                        if (encKey) {
-                            if (typeof entry.moodLabel === "string" && entry.moodLabel.startsWith("enc:")) {
-                                moodLabel = await decryptText(encKey, entry.moodLabel);
-                            }
-                            if (typeof entry.words === "string" && entry.words.startsWith("enc:")) {
-                                try { words = JSON.parse(await decryptText(encKey, entry.words)); }
-                                catch { words = []; }
-                            }
-                        }
-
-                        return { ...entry, moodLabel, words };
-                    }));
-
-                    historyList.innerHTML = decrypted.map((entry) => {
-                        const wordPills = entry.words.map((word) =>
+                    historyList.innerHTML = entries.map((entry) => {
+                        const words = Array.isArray(entry.words) ? entry.words.map((word) =>
                             `<span class="success-word-pill">${escapeHtml(word)}</span>`
-                        ).join("");
+                        ).join("") : "";
                         return `
                             <article class="history-item">
                                 <div class="history-row">
-                                    <strong>${escapeHtml(entry.moodLabel)}</strong>
+                                    <strong>${escapeHtml(entry.moodLabel || "Mood")}</strong>
                                     <span class="history-date">${escapeHtml(formatDate(entry.timestamp))}</span>
                                 </div>
-                                <div class="success-words">${wordPills}</div>
+                                <div class="success-words">${words}</div>
                             </article>
                         `;
                     }).join("");
