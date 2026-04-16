@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
     <style>
         /* Dashboard: orbiting glass bubbles (this page only) */
         .dashboard-page.container {
@@ -307,6 +308,14 @@
 </head>
 
 <body>
+    <script>
+        (async () => {
+            const sessionData = await globalThis.getSession?.();
+            if (!sessionData?.user) {
+                globalThis.location.href = "login.html";
+            }
+        })();
+    </script>
     <!-- Check-in questionnaire modal -->
     <div class="username-overlay" id="questionnaire-overlay" style="display:none;z-index:200;align-items:flex-start;padding:24px 0;overflow-y:auto;">
         <div class="panel" style="width:min(520px,94vw);padding:32px 28px;text-align:left;margin:auto;">
@@ -445,12 +454,10 @@
                 document.getElementById('q-error').style.display = 'block';
                 return;
             }
-            const username = localStorage.getItem('username');
-            if (!username) return;
             try {
                 await fetch('/api/questionnaire', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Username': username },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ responses: qResponses }),
                 });
             } catch {

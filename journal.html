@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
 </head>
 
 <body>
@@ -25,12 +26,12 @@
     </div>
 
     <!-- Username prompt -->
-    <div class="username-overlay" id="username-overlay">
+    <div class="username-overlay" id="username-overlay" style="display:none;">
         <div class="username-card panel">
             <h2>Welcome</h2>
             <p>Enter a username to access your journal.</p>
             <input type="text" id="username-input" placeholder="Username" />
-            <button class="main-button full-width" onclick="setUsername()">Continue</button>
+            <button class="main-button full-width" type="button">Continue</button>
         </div>
     </div>
 
@@ -83,7 +84,11 @@
     <script type="module">
         import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
 
-        let currentUsername = localStorage.getItem('username');
+        const sessionData = await globalThis.requireAuth();
+        if (!sessionData || !sessionData.user) {
+            throw new Error("Authentication required");
+        }
+        let currentUsername = (sessionData.user.email || sessionData.user.sub || "").trim();
         let encryptionKey = null;
 
         // Derives the encryption key from the user's Google account ID (or username).
@@ -92,31 +97,12 @@
             encryptionKey = await getEncryptionKey();
         }
 
-        // Show or hide the username prompt
-        if (currentUsername) {
-            document.getElementById('username-overlay').style.display = 'none';
-            initEncryption().then(() => loadEntries());
-        }
-
-        // Press Enter to submit username
-        document.getElementById('username-input').addEventListener('keydown', e => {
-            if (e.key === 'Enter') setUsername();
-        });
-
-        async function setUsername() {
-            const val = document.getElementById('username-input').value.trim();
-            if (!val) return;
-            currentUsername = val;
-            localStorage.setItem('username', val);
-            document.getElementById('username-overlay').style.display = 'none';
-            await initEncryption();
-            loadEntries();
-        }
+        await initEncryption();
+        await loadEntries();
 
         function authHeaders() {
             return {
                 'Content-Type': 'application/json',
-                'X-Username': currentUsername,
             };
         }
 
@@ -196,6 +182,10 @@
         async function loadEntries() {
             try {
                 const res = await fetch('/api/entries', { headers: authHeaders() });
+                if (res.status === 401) {
+                    globalThis.location.href = 'login.html';
+                    return;
+                }
                 const raw = await res.json();
                 // Decrypt each entry's title and content before storing in memory
                 allEntries = await Promise.all(raw.map(async entry => ({
@@ -349,7 +339,6 @@
         }
 
         // Module functions are not global, so expose the ones used by onclick attributes in HTML
-        window.setUsername = setUsername;
         window.saveEntry = saveEntry;
         window.deleteEntry = deleteEntry;
         window.filterEntries = filterEntries;

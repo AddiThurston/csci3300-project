@@ -9,9 +9,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Check-In</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
 </head>
 
 <body>
+    <script>
+        (async () => {
+            const sessionData = await globalThis.getSession?.();
+            if (!sessionData?.user) {
+                globalThis.location.href = "login.html";
+            }
+        })();
+    </script>
     <header class="top-bar">
         <a href="index.html" style="text-decoration:none;"><div class="insite-logo"> InSiteful Mind </div></a>
         <!-- Navigation buttons -->

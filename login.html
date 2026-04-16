@@ -29,6 +29,13 @@
             <div class="g_id_signin" data-shape="pill" data-width="320">
             </div>
             <script>
+                (async () => {
+                    const sessionData = await globalThis.getSession?.();
+                    if (sessionData?.user) {
+                        globalThis.location.href = "index.html";
+                    }
+                })();
+
                 // Decode the JWT payload from Google's credential response.
                 // JWT uses base64url encoding, so we normalize it before atob().
                 function decodeJwtPayload(jwt) {
@@ -49,21 +56,22 @@
 
                     try {
                         const payload = decodeJwtPayload(response.credential);
-                        // WIP (idk what to do to with this yet)
                         const user = {
                             email: payload.email,
                             name: payload.name,
                             picture: payload.picture,
                             sub: payload.sub,
                         };
-
-                        // Store basic profile info and raw credential for next page usage.
-                        // Note: this is client-side state only (no backend validation yet).
-                        sessionStorage.setItem('user', JSON.stringify(user));
-                        sessionStorage.setItem('credential', response.credential);
-
-                        // Move the user into the app after successful sign-in.
-                        globalThis.location.href = 'index.html';
+                        sessionStorage.setItem("user", JSON.stringify(user));
+                        sessionStorage.setItem("credential", response.credential);
+                        globalThis.signInWithGoogleCredential(response.credential)
+                            .then(() => {
+                                globalThis.location.href = "index.html";
+                            })
+                            .catch((error) => {
+                                console.error("Backend Google sign-in failed.", error);
+                                alert("Could not complete sign-in. Please try again.");
+                            });
                     } catch (error) {
                         console.error('Failed to parse Google credential payload.', error);
                     }

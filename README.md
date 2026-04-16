@@ -1,3 +1,9 @@
+USE CI FOR:
+UI Automation Test Cases
+Smoke Test cases
+Flaky Test cases
+Pytest cases
+
 # InSiteful Mind
 
 InSiteful Mind is a Flask + Upstash Redis web app for lightweight mental-health reflection.
@@ -17,9 +23,8 @@ for the questionnaire and trends dashboard.
 ### In Progress / Placeholder
 - `check-in.html` is still a questionnaire placeholder
 - `trends.html` and `index.html` are placeholder/dashboard shells
-- Backend authentication/session validation is not yet implemented
 - AI-powered feedback/advice is not yet implemented
-- Login page with Google credential parsing on the client side
+- Additional production hardening for auth/session lifecycle
 
 ## Pages
 
@@ -36,14 +41,17 @@ The backend is in `server.py` and serves both static files and API routes.
 
 - Journal entries are stored in Redis hash keys: `journal:{username}`
 - Reflection check-ins are stored in Redis hash keys: `checkin:{username}`
-- User scoping is currently done with request header `X-Username`
+- User scoping is done with backend session cookies after Google sign-in
 
-This header-based approach is suitable for development/testing only and should be replaced with
-validated backend auth for production.
+Session cookies are signed by Flask and marked `HttpOnly` and `SameSite=Lax`.
 
 ## API Endpoints
 
-All API routes require `X-Username`.
+All data API routes require an authenticated session cookie.
+
+- `POST /api/auth/google` - verify Google credential and create session
+- `GET /api/auth/session` - validate current session
+- `POST /api/auth/logout` - clear session cookie
 
 - `GET /api/entries` - list all journal entries (newest first)
 - `POST /api/entries` - create journal entry (`content` required, `title` optional)
@@ -78,9 +86,12 @@ All API routes require `X-Username`.
    ```
 4. Create `.env` in project root:
    ```env
-   UPSTASH_REDIS_REST_URL=your_redis_url
-   UPSTASH_REDIS_REST_TOKEN=your_redis_token
-   PORT=3000
+  UPSTASH_REDIS_REST_URL=your_redis_url
+  UPSTASH_REDIS_REST_TOKEN=your_redis_token
+  GOOGLE_CLIENT_ID=your_google_oauth_client_id
+  FLASK_SECRET_KEY=your_random_secret
+  COOKIE_SECURE=false
+  PORT=3000
    ```
 5. Start the app:
    ```bash
@@ -104,5 +115,4 @@ pytest -q
 
 - Implement full questionnaire flow on `check-in.html`
 - Build trends visualizations on `trends.html`
-- Replace header-based identity with backend-validated auth/session
 - Add AI-assisted journal insights once backend auth/data flows are finalized

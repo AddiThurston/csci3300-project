@@ -8,6 +8,7 @@
     <title>InSiteful Mind - Trends</title>
 
     <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -302,12 +303,12 @@
 </head>
 
 <body>
-    <div class="username-overlay" id="username-overlay">
+    <div class="username-overlay" id="username-overlay" style="display:none;">
         <div class="username-card panel">
             <h2>Welcome</h2>
             <p>Enter a username to load your trends.</p>
             <input type="text" id="username-input" placeholder="Username" />
-            <button class="main-button full-width" onclick="setUsername()">Continue</button>
+            <button class="main-button full-width" type="button">Continue</button>
         </div>
     </div>
 
@@ -402,45 +403,17 @@
         const topWordsList = document.getElementById("topWords");
         const chartFrame = document.getElementById("chartFrame");
         const trendCard = document.getElementById("trendCard");
-        const usernameOverlay = document.getElementById("username-overlay");
-        const usernameInput = document.getElementById("username-input");
+        const sessionData = await globalThis.requireAuth();
+        if (!sessionData || !sessionData.user) {
+            throw new Error("Authentication required");
+        }
 
         let moodChart = null;
-        let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
-
-        if (currentUsername) {
-            usernameOverlay.style.display = "none";
-        }
-
-        usernameInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") setUsername();
-        });
-
-        function getSessionUser() {
-            try {
-                return JSON.parse(sessionStorage.getItem("user") || "null");
-            } catch {
-                return null;
-            }
-        }
-
-        function deriveUsernameFromUser(user) {
-            if (!user || typeof user !== "object") return "";
-            return (user.email || user.name || user.sub || "").toString().trim();
-        }
 
         function authHeaders() {
-            const headers = {
+            return {
                 "Content-Type": "application/json",
-                "X-Username": currentUsername || "",
             };
-
-            const sessionUser = getSessionUser();
-            if (sessionUser) {
-                headers["X-User-Info"] = JSON.stringify(sessionUser);
-            }
-
-            return headers;
         }
 
         function formatDate(ts) {
@@ -675,12 +648,6 @@
         }
 
         async function loadTrends() {
-            if (!currentUsername) {
-                resetDashboard();
-                usernameOverlay.style.display = "flex";
-                return;
-            }
-
             try {
                 const response = await fetch("/api/checkin", {
                     method: "GET",
@@ -699,19 +666,8 @@
             }
         }
 
-        async function setUsername() {
-            const value = usernameInput.value.trim();
-            if (!value) return;
-            currentUsername = value;
-            localStorage.setItem("username", value);
-            usernameOverlay.style.display = "none";
-            await loadTrends();
-        }
-
-        globalThis.setUsername = setUsername;
-
         resetDashboard();
-        loadTrends();
+        await loadTrends();
     </script>
     <script>
         const QUESTIONS = [
@@ -761,9 +717,7 @@
         function dismissQuestionnaire() { document.getElementById("questionnaire-overlay").style.display="none"; }
         async function submitQuestionnaire() {
             if (QUESTIONS.some(q => !(q.id in qResponses))) { document.getElementById("q-error").style.display="block"; return; }
-            const username = localStorage.getItem("username");
-            if (!username) return;
-            try { await fetch("/api/questionnaire", { method:"POST", headers:{"Content-Type":"application/json","X-Username":username}, body:JSON.stringify({responses:qResponses}) }); } catch {}
+            try { await fetch("/api/questionnaire", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({responses:qResponses}) }); } catch {}
             dismissQuestionnaire();
         }
     </script>

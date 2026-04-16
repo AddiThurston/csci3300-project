@@ -1,31 +1,107 @@
 import json
 import os
 import time
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 from upstash_redis import Redis
 
 load_dotenv() # load the environment variables from the .env file
 
 app = Flask(__name__, static_folder=".")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "false").lower() == "true",
+)
+
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
+GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+AUTH_REQUIRED_ERROR = {"error": "Authentication required"}
 
 # redis needs a URL and token to connect to the database
 redis = Redis(
-    url=os.environ["UPSTASH_REDIS_REST_URL"],
-    token=os.environ["UPSTASH_REDIS_REST_TOKEN"],
+    url=os.environ.get("UPSTASH_REDIS_REST_URL", "http://localhost:6379"),
+    token=os.environ.get("UPSTASH_REDIS_REST_TOKEN", "local-dev-token"),
 )
 
-# get the username from the X-Username header in the HTML
+def verify_google_credential(id_token):
+    query = urlencode({"id_token": id_token})
+    url = f"{GOOGLE_TOKENINFO_URL}?{query}"
+    try:
+        with urlopen(url, timeout=5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, json.JSONDecodeError):
+        return None
+
+    aud = payload.get("aud")
+    if GOOGLE_CLIENT_ID and aud != GOOGLE_CLIENT_ID:
+        return None
+    if not payload.get("sub"):
+        return None
+    if payload.get("email_verified") not in (True, "true"):
+        return None
+    return payload
+
+
+def current_user():
+    user = session.get("user")
+    if isinstance(user, dict):
+        return user
+    return None
+
+
 def get_username():
-    return request.headers.get("X-Username", "").strip() or None
+    user = current_user()
+    if not user:
+        return None
+    return (user.get("email") or user.get("sub") or "").strip() or None
 
 
 # Serve HTML files
-@app.route("/")
-@app.route("/<path:filename>")
+@app.route("/", methods=["GET"])
+@app.route("/<path:filename>", methods=["GET"])
 def static_files(filename="index.html"):
     return send_from_directory(".", filename)
+
+
+@app.post("/api/auth/google")
+def google_signin():
+    body = request.get_json() or {}
+    credential = body.get("credential")
+    if not isinstance(credential, str) or not credential.strip():
+        return jsonify({"error": "Google credential is required"}), 400
+
+    payload = verify_google_credential(credential.strip())
+    if not payload:
+        return jsonify({"error": "Invalid Google credential"}), 401
+
+    user = {
+        "sub": payload.get("sub"),
+        "email": payload.get("email"),
+        "name": payload.get("name"),
+        "picture": payload.get("picture"),
+    }
+    session["user"] = user
+    return jsonify({"user": user})
+
+
+@app.get("/api/auth/session")
+def auth_session():
+    user = current_user()
+    if not user:
+        return jsonify({"error": "Authentication required"}), 401
+    return jsonify({"user": user})
+
+
+@app.post("/api/auth/logout")
+def auth_logout():
+    session.clear()
+    return jsonify({"success": True})
 
 
 # GET /api/entries — fetch all journal entries for a user
@@ -33,7 +109,7 @@ def static_files(filename="index.html"):
 def get_entries():
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     data = redis.hgetall(f"journal:{username}")
     if not data:
@@ -49,7 +125,7 @@ def get_entries():
 def create_entry():
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     body = request.get_json()
     content = (body or {}).get("content", "").strip()
@@ -74,7 +150,7 @@ def create_entry():
 def delete_entry(entry_id):
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     redis.hdel(f"journal:{username}", entry_id)
     return jsonify({"success": True})
@@ -85,7 +161,7 @@ def delete_entry(entry_id):
 def create_checkin():
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     body       = request.get_json() or {}
     words      = body.get("words", [])
@@ -117,7 +193,7 @@ def create_checkin():
 def get_checkins():
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     limit_raw = request.args.get("limit")
     limit = None
@@ -153,7 +229,7 @@ def get_checkins():
 def delete_checkin(checkin_id):
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     redis.hdel(f"checkin:{username}", checkin_id)
     return jsonify({"success": True})
@@ -171,7 +247,7 @@ QUESTIONNAIRE_QUESTION_IDS = {
 def create_questionnaire():
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     body = request.get_json() or {}
     responses = body.get("responses")
@@ -205,7 +281,7 @@ def create_questionnaire():
 def get_questionnaires():
     username = get_username()
     if not username:
-        return jsonify({"error": "Username required"}), 401
+        return jsonify(AUTH_REQUIRED_ERROR), 401
 
     data = redis.hgetall(f"questionnaire:{username}")
     if not data:

@@ -8,7 +8,7 @@ export async function getEncryptionKey() {
     try {
         const userStr = sessionStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : null;
-        const secret = user?.sub || localStorage.getItem('username');
+        const secret = user?.sub;
         if (!secret) return null;
 
         const keyMaterial = await crypto.subtle.importKey(

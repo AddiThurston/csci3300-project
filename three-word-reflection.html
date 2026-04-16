@@ -7,15 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Three-Word Reflection</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
 </head>
 
 <body>
-    <div class="username-overlay" id="username-overlay">
+    <div class="username-overlay" id="username-overlay" style="display:none;">
         <div class="username-card panel">
             <h2>Welcome</h2>
             <p>Enter a username to access your check-in.</p>
             <input type="text" id="username-input" placeholder="Username" />
-            <button class="main-button full-width" onclick="setUsername()">Continue</button>
+            <button class="main-button full-width" type="button">Continue</button>
         </div>
     </div>
 
@@ -112,12 +113,6 @@
             renderSelected,
             selectedWords,
         } from "./word-system.js";
-        import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
-
-        let encryptionKey = null;
-        async function initEncryption() {
-            encryptionKey = await getEncryptionKey();
-        }
 
         const moodLevels = [
             "Abysmal",
@@ -138,60 +133,25 @@
             "#67f0ff",
         ];
 
-        function getSessionUser() {
-            try {
-                return JSON.parse(sessionStorage.getItem("user") || "null");
-            } catch {
-                return null;
-            }
+        const sessionData = await globalThis.requireAuth();
+        if (!sessionData || !sessionData.user) {
+            throw new Error("Authentication required");
         }
-
-        function deriveUsernameFromUser(user) {
-            if (!user || typeof user !== "object") return "";
-            return (user.email || user.name || user.sub || "").toString().trim();
-        }
-
-        let currentUsername = deriveUsernameFromUser(getSessionUser()) || localStorage.getItem("username");
 
         const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
         const moodValue = document.getElementById("mood-value");
         const moodScaleLabels = Array.from(document.querySelectorAll(".mood-scale-labels span"));
-        const usernameOverlay = document.getElementById("username-overlay");
-        const usernameInput = document.getElementById("username-input");
         const historyCard = document.getElementById("history-card");
         const historyList = document.getElementById("history-list");
         const historyMeta = document.getElementById("history-meta");
         const historyBtn = document.getElementById("view-history-btn");
         let historyVisible = false;
 
-        if (currentUsername) {
-            usernameOverlay.style.display = "none";
-        }
-
-        usernameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") setUsername();
-        });
-
-        function setUsername() {
-            const val = usernameInput.value.trim();
-            if (!val) return;
-            currentUsername = val;
-            localStorage.setItem("username", val);
-            usernameOverlay.style.display = "none";
-        }
-
         function authHeaders() {
-            const headers = {
+            return {
                 "Content-Type": "application/json",
-                "X-Username": currentUsername || "",
             };
-
-            const sessionUser = getSessionUser();
-            if (sessionUser) {
-                headers["X-User-Info"] = JSON.stringify(sessionUser);
-            }
-            return headers;
         }
 
         function escapeHtml(value) {
@@ -288,14 +248,6 @@
             const moodScore = Number(moodSlider.value);
             const moodIndex = moodIndexFromScore(moodScore);
 
-            // Encrypt the words and mood label before sending to the server
-            const wordsToSend = encryptionKey
-                ? await encryptText(encryptionKey, JSON.stringify(selectedWords))
-                : selectedWords;
-            const moodLabelToSend = encryptionKey
-                ? await encryptText(encryptionKey, moodLevels[moodIndex])
-                : moodLevels[moodIndex];
-
             const payload = {
                 words: selectedWords,
                 moodScore,
@@ -327,12 +279,6 @@
                 historyCard.style.display = "none";
                 historyBtn.textContent = "View Past Entries";
                 historyVisible = false;
-                return;
-            }
-
-            if (!currentUsername) {
-                alert("Please enter a username first.");
-                usernameOverlay.style.display = "flex";
                 return;
             }
 
@@ -451,9 +397,7 @@
         function dismissQuestionnaire() { document.getElementById("questionnaire-overlay").style.display="none"; }
         async function submitQuestionnaire() {
             if (QUESTIONS.some(q => !(q.id in qResponses))) { document.getElementById("q-error").style.display="block"; return; }
-            const username = localStorage.getItem("username");
-            if (!username) return;
-            try { await fetch("/api/questionnaire", { method:"POST", headers:{"Content-Type":"application/json","X-Username":username}, body:JSON.stringify({responses:qResponses}) }); } catch {}
+            try { await fetch("/api/questionnaire", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({responses:qResponses}) }); } catch {}
             dismissQuestionnaire();
         }
     </script>
