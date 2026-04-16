@@ -203,12 +203,21 @@
             return interpolateColor(moodColors[lower], moodColors[upper], scaled - lower);
         }
 
+        const categoryLabel = {
+            abysmal: "Abysmal",
+            rough: "Rough",
+            low: "Low",
+            neutral: "Okay",
+            good: "Good",
+            great: "Great",
+            exceptional: "Exceptional",
+        };
+
         function updateMoodLabel() {
             const score = Number(moodSlider.value);
 
-            // Update label text (you already had this)
-            const index = moodIndexFromScore(score);
-            moodValue.textContent = moodLevels[index];
+            // Use sliderCategory so the label and word bank always switch together
+            moodValue.textContent = categoryLabel[sliderCategory(score)];
 
             moodPage.style.setProperty("--mood-accent", moodAccentFromScore(score));
 
@@ -335,10 +344,14 @@
         globalThis.viewPastEntries = viewPastEntries;
 
         function sliderCategory(val) {
-            // 7 levels — Abysmal/Rough/Low → negative, Okay → neutral, Good/Great/Exceptional → positive
-            if (val <= 45) return 'negative';
-            if (val <= 54) return 'neutral';
-            return 'positive';
+            // 7 levels, each mapped to its own word tier
+            if (val <= 12) return 'abysmal';
+            if (val <= 27) return 'rough';
+            if (val <= 42) return 'low';
+            if (val <= 56) return 'neutral';
+            if (val <= 71) return 'good';
+            if (val <= 87) return 'great';
+            return 'exceptional';
         }
 
         moodSlider.addEventListener("input", () => {
