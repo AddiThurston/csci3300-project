@@ -21,7 +21,8 @@ jobs:
                 pip install -r requirements.txt
             - name: Run Tests
               env:
-                : ${{ secrets.MY_API_KEY }}
+                UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+                UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
               run: |
                 python3 -m pytest test_journal.py -v
                 python3 -m pytest test_redis.py -v
