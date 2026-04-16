@@ -1,3 +1,4 @@
 flask
 upstash-redis
 python-dotenv
+pytest
