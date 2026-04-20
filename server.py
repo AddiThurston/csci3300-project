@@ -5,11 +5,15 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
+from google import genai
+
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory, session
 from upstash_redis import Redis
 
 load_dotenv() # load the environment variables from the .env file
+
+gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 app = Flask(__name__, static_folder=".")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
