@@ -27,3 +27,4 @@ jobs:
                 python3 -m pytest test_journal.py -v
                 python3 -m pytest test_redis.py -v
                 python3 -m pytest test_three.py -v
+                python3 -m pytest test_chat_agent.py -v
