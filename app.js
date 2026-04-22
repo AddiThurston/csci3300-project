@@ -76,6 +76,10 @@ function normalizeTheme(themeName) {
 
 function applyTheme(themeName) {
     const theme = normalizeTheme(themeName);
+    const root = globalThis.document?.documentElement;
+    if (root) {
+        root.dataset.theme = theme;
+    }
     const body = globalThis.document?.body;
     if (body) {
         body.dataset.theme = theme;
@@ -92,6 +96,9 @@ function setTheme(themeName) {
 function getTheme() {
     return normalizeTheme(globalThis.localStorage?.getItem(THEME_STORAGE_KEY));
 }
+
+// Apply as early as possible to avoid flash of default theme.
+applyTheme(getTheme());
 
 globalThis.addEventListener("DOMContentLoaded", () => {
     applyTheme(getTheme());
