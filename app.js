@@ -41,6 +41,7 @@ async function getSession() {
 async function requireAuth() {
     const session = await getSession();
     if (!session?.user) {
+        sessionStorage.setItem("returnUrl", globalThis.location.href);
         globalThis.location.href = "login.html";
         return null;
     }

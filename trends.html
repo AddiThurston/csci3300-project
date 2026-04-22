@@ -299,6 +299,204 @@
                 padding: 22px 14px 14px;
             }
         }
+
+        .view-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            background: rgba(95, 140, 255, 0.1);
+            border: 1px solid rgba(95, 140, 255, 0.25);
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .view-banner strong { color: #f5f8ff; }
+
+        .share-panel {
+            padding: 24px;
+            border-radius: 22px;
+            border: 1px solid rgba(156, 176, 210, 0.18);
+            background: rgba(9, 15, 33, 0.74);
+            display: grid;
+            gap: 18px;
+        }
+
+        .share-panel h2 { margin: 0; font-size: 1.1rem; }
+
+        .share-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .share-input-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(156, 176, 210, 0.2);
+            background: rgba(8, 13, 29, 0.82);
+            color: #f5f8ff;
+            font: inherit;
+            font-size: 14px;
+        }
+
+        .share-input-row input::placeholder { color: var(--muted); }
+
+        .share-viewer-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .share-viewer-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(95, 140, 255, 0.07);
+            border: 1px solid rgba(95, 140, 255, 0.14);
+        }
+
+        .share-viewer-email {
+            flex: 1;
+            font-size: 14px;
+            color: #f5f8ff;
+            word-break: break-all;
+        }
+
+        .share-revoke-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 100, 120, 0.25);
+            background: rgba(255, 100, 120, 0.07);
+            color: #ff8a9d;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .share-empty {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .share-msg {
+            font-size: 13px;
+            min-height: 18px;
+        }
+
+        .share-msg.ok { color: #7bf3b0; }
+        .share-msg.err { color: #ff8a9d; }
+
+        .shared-with-section {
+            display: grid;
+            gap: 14px;
+        }
+
+        .shared-with-section h2 { margin: 0; font-size: 1.1rem; }
+
+        .shared-person-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .shared-person-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: 16px;
+            border: 1px solid rgba(95, 140, 255, 0.22);
+            background: rgba(95, 140, 255, 0.08);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .shared-person-card:hover {
+            background: rgba(95, 140, 255, 0.16);
+            border-color: rgba(95, 140, 255, 0.4);
+        }
+
+        .shared-person-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #67f0ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 15px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .shared-person-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f5f8ff;
+        }
+
+        .shared-person-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* Trends modal */
+        .trends-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(5, 8, 20, 0.82);
+            backdrop-filter: blur(6px);
+            align-items: flex-start;
+            justify-content: center;
+            padding: 32px 16px;
+            overflow-y: auto;
+        }
+
+        .trends-modal-overlay.open { display: flex; }
+
+        .trends-modal {
+            width: min(900px, 100%);
+            border-radius: 24px;
+            border: 1px solid rgba(156, 176, 210, 0.18);
+            background: var(--surface);
+            padding: 32px;
+            position: relative;
+            margin: auto;
+        }
+
+        .trends-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(156, 176, 210, 0.2);
+            background: rgba(8, 13, 29, 0.7);
+            color: var(--muted);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .trends-modal-close:hover { color: #f5f8ff; }
+
+        .trends-modal-title {
+            margin: 0 0 24px;
+            font-size: 1.15rem;
+            color: var(--muted);
+        }
+
+        .trends-modal-title strong { color: #f5f8ff; }
     </style>
 </head>
 
@@ -395,9 +593,63 @@
                     </div>
                     <ul class="emotion-list" id="topWords"></ul>
                 </article>
+
+                <!-- Shared with you: cards for each person who gave you access -->
+                <article class="trend-card shared-with-section" id="sharedWithSection" style="display:none;">
+                    <div>
+                        <h2>Shared with You</h2>
+                        <p class="trend-card-subtitle" style="margin:6px 0 0;">Click someone's card to view their trends.</p>
+                    </div>
+                    <div class="shared-person-list" id="sharedPersonList"></div>
+                </article>
+
+                <!-- View-mode banner: shown when browsing someone else's trends -->
+                <div class="view-banner" id="viewBanner" style="display:none;">
+                    <span>You are viewing <strong id="viewBannerOwner"></strong>'s trends. Only you can see this page — it is tied to your Google account.</span>
+                </div>
+
+                <!-- Share panel: shown only to the owner -->
+                <article class="share-panel" id="sharePanel" style="display:none;">
+                    <div>
+                        <h2>Share Your Trends</h2>
+                        <p class="trend-card-subtitle" style="margin:6px 0 0;">Grant specific people access by their Google email. The link only works for the exact person you invite — forwarding it to others will not grant them access.</p>
+                    </div>
+                    <div class="share-input-row">
+                        <input type="email" id="shareEmailInput" placeholder="friend@example.com" />
+                        <button class="main-button" id="shareGrantBtn" type="button">Grant Access</button>
+                    </div>
+                    <p class="share-msg" id="shareMsg"></p>
+                    <div class="share-viewer-list" id="shareViewerList">
+                        <p class="share-empty">No one has access yet.</p>
+                    </div>
+                </article>
             </div>
         </section>
     </main>
+
+    <!-- Modal for viewing a shared person's trends -->
+    <div class="trends-modal-overlay" id="trendsModalOverlay">
+        <div class="trends-modal" id="trendsModal">
+            <button class="trends-modal-close" id="trendsModalClose">&times;</button>
+            <p class="trends-modal-title" id="trendsModalTitle">Viewing <strong></strong>'s Trends</p>
+            <div class="trends-content" id="trendsModalContent">
+                <section class="metrics-grid">
+                    <article class="metric-card"><p class="metric-label">Average mood</p><p class="metric-value" id="m-avgMood">--</p><p class="metric-detail" id="m-avgMoodDetail"></p></article>
+                    <article class="metric-card"><p class="metric-label">Total check-ins</p><p class="metric-value" id="m-checkinCount">0</p><p class="metric-detail" id="m-checkinCountDetail"></p></article>
+                    <article class="metric-card" id="m-trendCard"><p class="metric-label">Weekly direction</p><p class="metric-value" id="m-trendValue">--</p><p class="metric-detail" id="m-trendDirection"></p></article>
+                    <article class="metric-card"><p class="metric-label">Range</p><p class="metric-value" id="m-bestWorst">--</p><p class="metric-detail" id="m-bestWorstDetail"></p></article>
+                </section>
+                <article class="trend-card">
+                    <h2 style="margin:0 0 16px;">Mood Over Time</h2>
+                    <div class="chart-frame" id="m-chartFrame"><canvas id="m-moodChart"></canvas></div>
+                </article>
+                <article class="trend-card emotions-card">
+                    <div><h2>Top Emotions</h2></div>
+                    <ul class="emotion-list" id="m-topWords"></ul>
+                </article>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         const topWordsList = document.getElementById("topWords");
@@ -407,6 +659,135 @@
         if (!sessionData || !sessionData.user) {
             throw new Error("Authentication required");
         }
+
+        const myEmail = (sessionData.user.email || "").toLowerCase();
+        const params = new URLSearchParams(location.search);
+        const viewOwner = (params.get("view") || "").trim().toLowerCase();
+        const isViewMode = viewOwner !== "" && viewOwner !== myEmail;
+
+        if (isViewMode) {
+            document.getElementById("viewBanner").style.display = "flex";
+            document.getElementById("viewBannerOwner").textContent = viewOwner;
+        } else {
+            document.getElementById("sharePanel").style.display = "grid";
+            loadShareList();
+            loadSharedWithMe();
+            document.getElementById("shareGrantBtn").addEventListener("click", grantAccess);
+        }
+
+        // Modal close on X or clicking outside
+        const modalOverlay = document.getElementById("trendsModalOverlay");
+        document.getElementById("trendsModalClose").addEventListener("click", closeModal);
+        modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) closeModal(); });
+
+        let modalChart = null;
+
+        function closeModal() {
+            modalOverlay.classList.remove("open");
+            if (modalChart) { modalChart.destroy(); modalChart = null; }
+        }
+
+        async function openPersonModal(ownerEmail) {
+            const res = await fetch(`/api/trends/shared-checkins?owner=${encodeURIComponent(ownerEmail)}`);
+            if (!res.ok) { alert("Could not load trends. Access may have been removed."); return; }
+            const data = await res.json();
+            const checkins = Array.isArray(data) ? data : [];
+
+            document.getElementById("trendsModalTitle").innerHTML =
+                `Viewing <strong>${ownerEmail}</strong>'s Trends`;
+            renderModalDashboard(checkins);
+            modalOverlay.classList.add("open");
+            modalOverlay.scrollTop = 0;
+        }
+
+        function renderModalDashboard(checkins) {
+            const sorted = [...checkins].sort((a, b) => a.timestamp - b.timestamp);
+            const mChartFrame = document.getElementById("m-chartFrame");
+            const mTopWords = document.getElementById("m-topWords");
+
+            if (sorted.length === 0) {
+                document.getElementById("m-avgMood").textContent = "--";
+                document.getElementById("m-checkinCount").textContent = "0";
+                document.getElementById("m-trendValue").textContent = "--";
+                document.getElementById("m-bestWorst").textContent = "--";
+                mChartFrame.innerHTML = `<div class="empty-state"><strong>No check-ins yet</strong></div>`;
+                mTopWords.innerHTML = "";
+                return;
+            }
+
+            const scores = sorted.map(c => c.moodScore);
+            const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+            document.getElementById("m-avgMood").textContent = avg.toFixed(1);
+            document.getElementById("m-avgMoodDetail").textContent =
+                avg >= 7 ? "Positive outlook." : avg >= 5 ? "Balanced mood." : "Rough stretch.";
+            document.getElementById("m-checkinCount").textContent = String(sorted.length);
+            document.getElementById("m-checkinCountDetail").textContent =
+                `${formatDate(sorted[0].timestamp)} – ${formatDate(sorted[sorted.length - 1].timestamp)}`;
+            document.getElementById("m-bestWorst").textContent = `${Math.min(...scores)} / ${Math.max(...scores)}`;
+
+            const mTrendCard = document.getElementById("m-trendCard");
+            mTrendCard.classList.remove("trend-up", "trend-down", "trend-flat");
+            if (sorted.length >= 14) {
+                const avg7 = arr => arr.reduce((s, c) => s + c.moodScore, 0) / arr.length;
+                const diff = avg7(sorted.slice(-7)) - avg7(sorted.slice(-14, -7));
+                if (diff > 0.2) { document.getElementById("m-trendValue").textContent = "Improving"; mTrendCard.classList.add("trend-up"); }
+                else if (diff < -0.2) { document.getElementById("m-trendValue").textContent = "Declining"; mTrendCard.classList.add("trend-down"); }
+                else { document.getElementById("m-trendValue").textContent = "Stable"; mTrendCard.classList.add("trend-flat"); }
+            } else {
+                document.getElementById("m-trendValue").textContent = "--";
+                document.getElementById("m-trendDirection").textContent = "Need 14+ check-ins for weekly trend.";
+            }
+
+            // Top words
+            const wordCounts = {};
+            sorted.forEach(c => (c.words || []).forEach(w => {
+                const n = w.toLowerCase().trim();
+                wordCounts[n] = (wordCounts[n] || 0) + 1;
+            }));
+            const top = Object.entries(wordCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            mTopWords.innerHTML = top.map(([w, n]) =>
+                `<li class="emotion-chip"><span>${w}</span><span class="emotion-count">${n}</span></li>`
+            ).join("") || `<li class="emotion-chip"><span>No emotions logged</span></li>`;
+
+            // Chart
+            mChartFrame.innerHTML = `<canvas id="m-moodChart"></canvas>`;
+            if (modalChart) { modalChart.destroy(); }
+            const ctx = document.getElementById("m-moodChart").getContext("2d");
+            const grad = ctx.createLinearGradient(0, 0, 0, 320);
+            grad.addColorStop(0, "rgba(103,240,255,0.35)");
+            grad.addColorStop(1, "rgba(103,240,255,0.02)");
+            modalChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: sorted.map(c => formatDate(c.timestamp)),
+                    datasets: [{ label: "Mood Score", data: sorted.map(c => c.moodScore), fill: true, backgroundColor: grad, borderColor: "#67f0ff", borderWidth: 3, pointRadius: 4, pointBackgroundColor: "#f6f9ff", pointBorderColor: "#67f0ff", tension: 0.35 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#e9f0ff" } } }, scales: { x: { ticks: { color: "#9cb0d2" }, grid: { color: "rgba(156,176,210,0.1)" } }, y: { suggestedMin: 1, suggestedMax: 100, ticks: { color: "#9cb0d2" }, grid: { color: "rgba(156,176,210,0.1)" } } } }
+            });
+        }
+
+        async function loadSharedWithMe() {
+            const res = await fetch("/api/trends/shared-with-me", { credentials: "same-origin" });
+            if (!res.ok) return;
+            const { owners } = await res.json();
+            const section = document.getElementById("sharedWithSection");
+            const list = document.getElementById("sharedPersonList");
+            if (!owners || owners.length === 0) { section.style.display = "none"; return; }
+            section.style.display = "grid";
+            list.innerHTML = owners.map(email => {
+                const initial = email[0].toUpperCase();
+                const display = email.split("@")[0];
+                return `<div class="shared-person-card" onclick="openPersonModal('${email}')">
+                    <div class="shared-person-avatar">${initial}</div>
+                    <div>
+                        <div class="shared-person-name">${display}</div>
+                        <div class="shared-person-sub">${email}</div>
+                    </div>
+                </div>`;
+            }).join("");
+        }
+
+        globalThis.openPersonModal = openPersonModal;
 
         let moodChart = null;
 
@@ -649,14 +1030,16 @@
 
         async function loadTrends() {
             try {
-                const response = await fetch("/api/checkin", {
-                    method: "GET",
-                    headers: authHeaders(),
-                });
+                const url = isViewMode
+                    ? `/api/trends/shared-checkins?owner=${encodeURIComponent(viewOwner)}`
+                    : "/api/checkin";
+                const response = await fetch(url, { method: "GET", headers: authHeaders() });
 
-                if (!response.ok) {
-                    throw new Error("Failed to load check-ins");
+                if (response.status === 403) {
+                    chartFrame.innerHTML = `<div class="empty-state"><strong>Access Denied</strong><p>You have not been granted access to this person's trends. Ask them to share it with your Google account email.</p></div>`;
+                    return;
                 }
+                if (!response.ok) throw new Error("Failed to load check-ins");
 
                 const data = await response.json();
                 const checkins = Array.isArray(data) ? data : Array.isArray(data.entries) ? data.entries : [];
@@ -665,6 +1048,66 @@
                 resetDashboard();
             }
         }
+
+        async function loadShareList() {
+            const res = await fetch("/api/trends/shares", { credentials: "same-origin" });
+            if (!res.ok) return;
+            const { viewers } = await res.json();
+            renderShareList(viewers || []);
+        }
+
+        function renderShareList(viewers) {
+            const list = document.getElementById("shareViewerList");
+            if (!viewers.length) {
+                list.innerHTML = `<p class="share-empty">No one has access yet.</p>`;
+                return;
+            }
+            list.innerHTML = viewers.map(email => `
+                <div class="share-viewer-row">
+                    <span class="share-viewer-email">${email}</span>
+                    <button class="share-revoke-btn" onclick="revokeAccess('${email}')">Revoke</button>
+                </div>`
+            ).join("");
+        }
+
+        async function grantAccess() {
+            const input = document.getElementById("shareEmailInput");
+            const msg = document.getElementById("shareMsg");
+            const email = input.value.trim().toLowerCase();
+            if (!email || !email.includes("@")) {
+                msg.textContent = "Enter a valid email address.";
+                msg.className = "share-msg err";
+                return;
+            }
+            const res = await fetch("/api/trends/share", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({ email }),
+            });
+            const body = await res.json();
+            if (!res.ok) {
+                msg.textContent = body.error || "Failed to grant access.";
+                msg.className = "share-msg err";
+                return;
+            }
+            msg.textContent = `Access granted to ${email}.`;
+            msg.className = "share-msg ok";
+            input.value = "";
+            loadShareList();
+        }
+
+        globalThis.revokeAccess = async function(email) {
+            await fetch("/api/trends/share", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({ email }),
+            });
+            document.getElementById("shareMsg").textContent = `Access revoked for ${email}.`;
+            document.getElementById("shareMsg").className = "share-msg ok";
+            loadShareList();
+        };
 
         resetDashboard();
         await loadTrends();

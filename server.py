@@ -292,6 +292,78 @@ def get_questionnaires():
     return jsonify(entries)
 
 
+# POST /api/trends/share — grant a specific email access to owner's trends
+@app.post("/api/trends/share")
+def add_trends_share():
+    username = get_username()
+    if not username:
+        return jsonify(AUTH_REQUIRED_ERROR), 401
+    body = request.get_json() or {}
+    viewer_email = (body.get("email") or "").strip().lower()
+    if not viewer_email or "@" not in viewer_email:
+        return jsonify({"error": "Valid email is required"}), 400
+    if viewer_email == username.lower():
+        return jsonify({"error": "You cannot share with yourself"}), 400
+    redis.sadd(f"trends_shares:{username}", viewer_email)
+    redis.sadd(f"trends_shared_with:{viewer_email}", username.lower())
+    return jsonify({"success": True})
+
+
+# DELETE /api/trends/share — revoke a specific email's access
+@app.delete("/api/trends/share")
+def remove_trends_share():
+    username = get_username()
+    if not username:
+        return jsonify(AUTH_REQUIRED_ERROR), 401
+    body = request.get_json() or {}
+    viewer_email = (body.get("email") or "").strip().lower()
+    if not viewer_email:
+        return jsonify({"error": "Email is required"}), 400
+    redis.srem(f"trends_shares:{username}", viewer_email)
+    redis.srem(f"trends_shared_with:{viewer_email}", username.lower())
+    return jsonify({"success": True})
+
+
+# GET /api/trends/shared-with-me — list owners who have shared their trends with current user
+@app.get("/api/trends/shared-with-me")
+def shared_with_me():
+    username = get_username()
+    if not username:
+        return jsonify(AUTH_REQUIRED_ERROR), 401
+    owners = redis.smembers(f"trends_shared_with:{username.lower()}") or []
+    return jsonify({"owners": list(owners)})
+
+
+# GET /api/trends/shares — list emails the owner has granted access to
+@app.get("/api/trends/shares")
+def list_trends_shares():
+    username = get_username()
+    if not username:
+        return jsonify(AUTH_REQUIRED_ERROR), 401
+    members = redis.smembers(f"trends_shares:{username}") or []
+    return jsonify({"viewers": list(members)})
+
+
+# GET /api/trends/shared-checkins?owner=email — fetch another user's check-ins if access was granted
+@app.get("/api/trends/shared-checkins")
+def get_shared_checkins():
+    viewer = get_username()
+    if not viewer:
+        return jsonify(AUTH_REQUIRED_ERROR), 401
+    owner = (request.args.get("owner") or "").strip().lower()
+    if not owner:
+        return jsonify({"error": "owner parameter is required"}), 400
+    is_member = redis.sismember(f"trends_shares:{owner}", viewer.lower())
+    if not is_member:
+        return jsonify({"error": "Access denied"}), 403
+    data = redis.hgetall(f"checkin:{owner}")
+    if not data:
+        return jsonify([])
+    entries = [json.loads(v) for v in data.values()]
+    entries.sort(key=lambda e: e["timestamp"], reverse=True)
+    return jsonify(entries)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 3000))
     app.run(port=port, debug=True)

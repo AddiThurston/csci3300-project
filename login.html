@@ -32,7 +32,9 @@
                 (async () => {
                     const sessionData = await globalThis.getSession?.();
                     if (sessionData?.user) {
-                        globalThis.location.href = "index.html";
+                        const returnUrl = sessionStorage.getItem("returnUrl");
+                        sessionStorage.removeItem("returnUrl");
+                        globalThis.location.href = returnUrl || "index.html";
                     }
                 })();
 
@@ -66,7 +68,9 @@
                         sessionStorage.setItem("credential", response.credential);
                         globalThis.signInWithGoogleCredential(response.credential)
                             .then(() => {
-                                globalThis.location.href = "index.html";
+                                const returnUrl = sessionStorage.getItem("returnUrl");
+                                sessionStorage.removeItem("returnUrl");
+                                globalThis.location.href = returnUrl || "index.html";
                             })
                             .catch((error) => {
                                 console.error("Backend Google sign-in failed.", error);
