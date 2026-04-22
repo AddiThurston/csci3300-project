@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InSiteful Mind - Settings</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
+</head>
+<body>
+    <script type="module">
+        const sessionData = await globalThis.getSession?.();
+        if (!sessionData?.user) {
+            globalThis.location.href = "login.html";
+        }
+    </script>
+
+    <header class="top-bar">
+        <a href="index.html" style="text-decoration:none;"><div class="insite-logo">InSiteful Mind</div></a>
+        <nav class="wrap row" aria-label="Primary navigation">
+            <a href="journal.html"><button class="main-button">Journal</button></a>
+            <a href="check-in.html"><button class="main-button">Check-In</button></a>
+            <a href="three-word-reflection.html"><button class="main-button">Three-Word</button></a>
+            <a href="trends.html"><button class="main-button">Trends</button></a>
+        </nav>
+    </header>
+
+    <main class="container container-top">
+        <section class="settings-page">
+            <article class="panel settings-card">
+                <h1 class="settings-title">Appearance Settings</h1>
+                <p class="settings-subtitle">Choose a visual theme that feels right for your reflection space.</p>
+
+                <form id="theme-form" class="theme-grid">
+                    <label class="theme-option" data-theme-option="midnight">
+                        <div><input type="radio" name="theme" value="midnight" /> Midnight</div>
+                        <div class="theme-preview theme-preview-midnight"></div>
+                    </label>
+
+                    <label class="theme-option" data-theme-option="bright">
+                        <div><input type="radio" name="theme" value="bright" /> Bright</div>
+                        <div class="theme-preview theme-preview-bright"></div>
+                    </label>
+
+                    <label class="theme-option" data-theme-option="meadow">
+                        <div><input type="radio" name="theme" value="meadow" /> Meadow</div>
+                        <div class="theme-preview theme-preview-meadow"></div>
+                    </label>
+
+                    <label class="theme-option" data-theme-option="forest">
+                        <div><input type="radio" name="theme" value="forest" /> Forest</div>
+                        <div class="theme-preview theme-preview-forest"></div>
+                    </label>
+                </form>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        const form = document.getElementById("theme-form");
+        const options = Array.from(document.querySelectorAll("[data-theme-option]"));
+
+        function markActive(themeName) {
+            options.forEach((option) => {
+                option.classList.toggle("active", option.dataset.themeOption === themeName);
+            });
+        }
+
+        function setChecked(themeName) {
+            const input = form.querySelector(`input[value="${themeName}"]`);
+            if (input) {
+                input.checked = true;
+            }
+        }
+
+        const initialTheme = globalThis.getPreferredTheme?.() || "midnight";
+        setChecked(initialTheme);
+        markActive(initialTheme);
+
+        form.addEventListener("change", (event) => {
+            const selectedTheme = event.target?.value;
+            if (!selectedTheme) return;
+            const appliedTheme = globalThis.applyTheme?.(selectedTheme) || selectedTheme;
+            markActive(appliedTheme);
+        });
+    </script>
+</body>
+</html>

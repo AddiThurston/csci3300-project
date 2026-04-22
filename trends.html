@@ -45,6 +45,329 @@
             </div>
         </section>
     </main>
+
+    <script type="module">
+        const topWordsList = document.getElementById("topWords");
+        const chartFrame = document.getElementById("chartFrame");
+        const trendCard = document.getElementById("trendCard");
+        const sessionData = await globalThis.requireAuth();
+        if (!sessionData || !sessionData.user) {
+            throw new Error("Authentication required");
+        }
+
+        let moodChart = null;
+
+        function authHeaders() {
+            return {
+                "Content-Type": "application/json",
+            };
+        }
+
+        function formatDate(ts) {
+            return new Date(ts).toLocaleDateString();
+        }
+
+        function formatLongDate(ts) {
+            return new Date(ts).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+            });
+        }
+
+        function moodLabelFromScore(score) {
+            const moodLevels = ["Abysmal", "Rough", "Low", "Okay", "Good", "Great", "Exceptional"];
+            const index = Math.max(0, Math.min(moodLevels.length - 1, Math.round((Number(score) / 100) * (moodLevels.length - 1))));
+            return moodLevels[index];
+        }
+
+        function resetDashboard() {
+            trendCard.classList.remove("trend-up", "trend-down", "trend-flat");
+            document.getElementById("avgMood").textContent = "--";
+            document.getElementById("avgMoodDetail").textContent = "We will calculate this as soon as check-ins appear.";
+            document.getElementById("checkinCount").textContent = "0";
+            document.getElementById("checkinCountDetail").textContent = "Build a clearer picture by checking in regularly.";
+            document.getElementById("trendValue").textContent = "--";
+            document.getElementById("trendDirection").textContent = "Need at least 14 check-ins for a weekly comparison.";
+            document.getElementById("bestWorst").textContent = "--";
+            document.getElementById("bestWorstDetail").textContent = "Your highest and lowest mood scores will appear here.";
+            chartFrame.innerHTML = `
+                <div class="empty-state">
+                    <strong>No check-ins yet</strong>
+                    <p>Your mood chart will appear here after you add a few check-ins.</p>
+                </div>
+            `;
+            topWordsList.innerHTML = `
+                <li class="emotion-chip">
+                    <span>No emotions logged yet</span>
+                    <span class="emotion-count">0</span>
+                </li>
+            `;
+            if (moodChart) {
+                moodChart.destroy();
+                moodChart = null;
+            }
+        }
+
+        function renderDashboard(checkins) {
+            const sortedCheckins = [...checkins].sort((a, b) => a.timestamp - b.timestamp);
+
+            const moodData = sortedCheckins.map(c => ({
+                date: formatDate(c.timestamp),
+                mood: c.moodScore
+            }));
+
+            topWordsList.innerHTML = "";
+            chartFrame.innerHTML = `<canvas id="moodChart"></canvas>`;
+
+            if (sortedCheckins.length === 0) {
+                resetDashboard();
+                return;
+            }
+
+            const avgMood = sortedCheckins.reduce((sum, c) => sum + c.moodScore, 0) / sortedCheckins.length;
+            const scores = sortedCheckins.map(c => c.moodScore);
+            const best = Math.max(...scores);
+            const worst = Math.min(...scores);
+
+            // Average Mood
+            document.getElementById("avgMood").textContent = avgMood.toFixed(1);
+            document.getElementById("avgMoodDetail").textContent =
+                avgMood >= 7
+                    ? "Your average suggests a positive outlook."
+                    : avgMood >= 5
+                        ? "Your average suggests a balanced recent mood."
+                        : "Your average suggests a negative recent mood.";
+
+            // Check-in
+            document.getElementById("checkinCount").textContent = String(sortedCheckins.length);
+            document.getElementById("checkinCountDetail").textContent =
+                `From ${moodData[0].date} to ${moodData[moodData.length - 1].date}`;
+
+            // Best/Worst
+            document.getElementById("bestWorst").textContent = ` ${worst} / ${best}`;
+            document.getElementById("bestWorstDetail").textContent =
+                `Lowest mood ${worst}, Highest mood ${best}.`;
+
+            // Weekly trend
+            if (sortedCheckins.length >= 14) {
+                const last7 = sortedCheckins.slice(-7);
+                const prev7 = sortedCheckins.slice(-14, -7);
+                const average = arr => arr.reduce((s, c) => s + c.moodScore, 0) / arr.length;
+                const recentAvg = average(last7);
+                const previousAvg = average(prev7);
+                const diff = recentAvg - previousAvg;
+
+                let trendLabel = "Stable";
+                let trendText = "Your last 7 check-ins are holding fairly steady compared with the previous 7.";
+                let trendClass = "trend-flat";
+
+                if (diff > 0.2) {
+                    trendLabel = "Improving";
+                    trendText = `Your last 7 check-ins improved by ${diff.toFixed(1)} points compared to the previous 7.`;
+                    trendClass = "trend-up";
+                } else if (diff < -0.2) {
+                    trendLabel = "Declining";
+                    trendText = `Your last 7 check-ins dipped by ${Math.abs(diff).toFixed(1)} points compared to the previous 7.`;
+                    trendClass = "trend-down";
+                }
+
+                trendCard.classList.add(trendClass);
+                document.getElementById("trendValue").textContent = trendLabel;
+                document.getElementById("trendDirection").textContent = trendText;
+            } else {
+                document.getElementById("trendValue").textContent = "--";
+            }
+
+            const wordCounts = {};
+
+            sortedCheckins.forEach(c => {
+                (c.words || []).forEach(word => {
+                    const normalizedWord = word.toLowerCase().trim();
+                    wordCounts[normalizedWord] = (wordCounts[normalizedWord] || 0) + 1;
+                });
+            });
+
+            const topWords = Object.entries(wordCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            if (topWords.length === 0) {
+                topWordsList.innerHTML = `
+                    <li class="emotion-chip">
+                        <span>No emotions logged yet</span>
+                        <span class="emotion-count">0</span>
+                    </li>
+                `;
+                return;
+            }
+
+            topWords.forEach(([word, count]) => {
+                const li = document.createElement("li");
+                li.className = "emotion-chip";
+                li.innerHTML = `<span>${word}</span><span class="emotion-count">${count}</span>`;
+                topWordsList.appendChild(li);
+            });
+            const ctx = document.getElementById("moodChart").getContext("2d");
+            const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+            gradient.addColorStop(0, "rgba(103, 240, 255, 0.35)");
+            gradient.addColorStop(1, "rgba(103, 240, 255, 0.02)");
+
+            if (moodChart) {
+                moodChart.destroy();
+            }
+
+            moodChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: moodData.map((entry) => entry.date),
+                    datasets: [{
+                        label: "Mood Score",
+                        data: moodData.map((entry) => entry.mood),
+                        fill: true,
+                        backgroundColor: gradient,
+                        borderColor: "#67f0ff",
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: "#f6f9ff",
+                        pointBorderColor: "#67f0ff",
+                        pointBorderWidth: 2,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#e9f0ff"
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title(tooltipItems) {
+                                    const point = sortedCheckins[tooltipItems[0].dataIndex];
+                                    return formatLongDate(point.timestamp);
+                                },
+                                label(context) {
+                                    const point = sortedCheckins[context.dataIndex];
+                                    return `Mood score: ${point.moodScore}`;
+                                },
+                                afterLabel(context) {
+                                    const point = sortedCheckins[context.dataIndex];
+                                    const lines = [`Mood label: ${moodLabelFromScore(point.moodScore)}`];
+                                    const words = Array.isArray(point.words) ? point.words.filter(Boolean) : [];
+                                    if (words.length > 0) {
+                                        lines.push(`Words: ${words.join(", ")}`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#9cb0d2"
+                            },
+                            grid: {
+                                color: "rgba(156, 176, 210, 0.1)"
+                            }
+                        },
+                        y: {
+                            suggestedMin: 1,
+                            suggestedMax: 100,
+                            ticks: {
+                                stepSize: 10,
+                                color: "#9cb0d2",
+                            },
+                            grid: {
+                                color: "rgba(156, 176, 210, 0.1)"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadTrends() {
+            try {
+                const response = await fetch("/api/checkin", {
+                    method: "GET",
+                    headers: authHeaders(),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to load check-ins");
+                }
+
+                const data = await response.json();
+                const checkins = Array.isArray(data) ? data : Array.isArray(data.entries) ? data.entries : [];
+                renderDashboard(checkins);
+            } catch {
+                resetDashboard();
+            }
+        }
+
+        resetDashboard();
+        await loadTrends();
+    </script>
+    <script>
+        const QUESTIONS = [
+            { id: "mood",             label: "How would you rate your overall mood today?" },
+            { id: "sleep",            label: "How well have you been sleeping?" },
+            { id: "energy",           label: "How is your energy level?" },
+            { id: "calm",             label: "How calm and relaxed do you feel?" },
+            { id: "connection",       label: "How connected do you feel to others?" },
+            { id: "motivation",       label: "How motivated do you feel?" },
+            { id: "focus",            label: "How well are you able to focus?" },
+            { id: "responsibilities", label: "How well are you managing your daily responsibilities?" },
+            { id: "hope",             label: "How hopeful do you feel about the future?" },
+            { id: "anxiety_free",     label: "How free from worry or anxiety do you feel?" },
+            { id: "progress",         label: "How satisfied are you with your recent progress?" },
+            { id: "physical",         label: "How well are you taking care of your physical health?" },
+            { id: "grounded",         label: "How present and grounded do you feel?" },
+        ];
+        const SCALE_LABELS = { 1: "Very Low", 2: "Low", 3: "Moderate", 4: "Good", 5: "Great" };
+        let qResponses = {};
+        function renderQuestionnaire() {
+            qResponses = {};
+            const list = document.getElementById("q-questions-list");
+            list.innerHTML = QUESTIONS.map((q, i) => `
+                <div style="margin-bottom:24px;">
+                    <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:var(--text);">${i + 1}. ${q.label}</p>
+                    <div style="display:flex;gap:8px;">
+                        ${[1,2,3,4,5].map(n => `<button id="q-btn-${q.id}-${n}" onclick="selectResponse('${q.id}', ${n})" style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);background:var(--control-bg-soft);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;" onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'" onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'">${n}<br><span style="font-size:10px;font-weight:400;">${SCALE_LABELS[n]}</span></button>`).join("")}
+                    </div>
+                </div>
+            `).join("");
+        }
+        function selectResponse(qid, val) {
+            qResponses[qid] = val;
+            [1,2,3,4,5].forEach(n => {
+                const btn = document.getElementById(`q-btn-${qid}-${n}`);
+                if (n === val) { btn.style.background="linear-gradient(135deg,var(--primary),var(--primary-dark))"; btn.style.borderColor="var(--primary)"; btn.style.color="#fff"; btn.dataset.selected="1"; }
+                else { btn.style.background="var(--control-bg-soft)"; btn.style.borderColor="var(--line)"; btn.style.color="var(--muted)"; delete btn.dataset.selected; }
+            });
+            document.getElementById("q-error").style.display="none";
+        }
+        function openQuestionnaire() {
+            renderQuestionnaire();
+            document.getElementById("q-error").style.display="none";
+            const o = document.getElementById("questionnaire-overlay");
+            o.style.display="flex"; o.scrollTop=0;
+        }
+        function dismissQuestionnaire() { document.getElementById("questionnaire-overlay").style.display="none"; }
+        async function submitQuestionnaire() {
+            if (QUESTIONS.some(q => !(q.id in qResponses))) { document.getElementById("q-error").style.display="block"; return; }
+            try { await fetch("/api/questionnaire", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({responses:qResponses}) }); } catch {}
+            dismissQuestionnaire();
+        }
+    </script>
 </body>
 
 </html>
