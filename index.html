@@ -332,18 +332,21 @@
 
     <header class="top-bar">
         <a href="index.html" style="text-decoration:none;"><div class="insite-logo">InSiteful Mind</div></a>
-        <nav class="wrap row" aria-label="Quick links">
-            <a href="journal.html">
-                <button type="button" class="main-button">Journal</button>
-            </a>
-            <button type="button" class="main-button" onclick="openQuestionnaire()">Check-In</button>
-            <a href="three-word-reflection.html">
-                <button type="button" class="main-button">Three-Word</button>
-            </a>
-            <a href="trends.html">
-                <button type="button" class="main-button">Trends</button>
-            </a>
-        </nav>
+        <div class="top-bar-actions">
+            <nav class="wrap row" aria-label="Quick links">
+                <a href="journal.html">
+                    <button type="button" class="main-button">Journal</button>
+                </a>
+                <button type="button" class="main-button" onclick="openQuestionnaire()">Check-In</button>
+                <a href="three-word-reflection.html">
+                    <button type="button" class="main-button">Three-Word</button>
+                </a>
+                <a href="trends.html">
+                    <button type="button" class="main-button">Trends</button>
+                </a>
+            </nav>
+            <a class="settings-gear" href="settings.html" title="Settings" aria-label="Open settings">⚙</a>
+        </div>
     </header>
 
     <main class="container dashboard-page">
@@ -406,7 +409,7 @@
                                 id="q-btn-${q.id}-${n}"
                                 onclick="selectResponse('${q.id}', ${n})"
                                 style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);
-                                       background:rgba(8,14,31,.45);color:var(--muted);font-size:13px;
+                                       background:var(--control-bg-soft);color:var(--control-text);font-size:13px;
                                        font-weight:600;cursor:pointer;transition:all .15s;"
                                 onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'"
                                 onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'"
@@ -427,7 +430,7 @@
                     btn.style.color = '#fff';
                     btn.dataset.selected = '1';
                 } else {
-                    btn.style.background = 'rgba(8,14,31,.45)';
+                    btn.style.background = 'var(--control-bg-soft)';
                     btn.style.borderColor = 'var(--line)';
                     btn.style.color = 'var(--muted)';
                     delete btn.dataset.selected;
