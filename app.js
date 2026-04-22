@@ -63,6 +63,8 @@ globalThis.getSession = getSession;
 globalThis.requireAuth = requireAuth;
 globalThis.logout = logout;
 
+// theme-early.js runs first in every page <head> and sets <html data-theme> before styles load.
+// This block keeps <body data-theme> in sync and exports setTheme/getTheme for the settings page.
 const THEME_STORAGE_KEY = "insite-theme";
 const DEFAULT_THEME = "light";
 const VALID_THEMES = new Set(["light", "dark", "meadow", "forest", "twilight"]);

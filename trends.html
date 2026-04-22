@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Trends</title>
 
+    <script src="theme-early.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js"></script>
 
@@ -312,13 +313,13 @@
             font-size: 14px;
         }
 
-        .view-banner strong { color: #f5f8ff; }
+        .view-banner strong { color: var(--text); }
 
         .share-panel {
             padding: 24px;
             border-radius: 22px;
-            border: 1px solid rgba(156, 176, 210, 0.18);
-            background: rgba(9, 15, 33, 0.74);
+            border: 1px solid var(--line);
+            background: var(--surface);
             display: grid;
             gap: 18px;
         }
@@ -334,9 +335,9 @@
             flex: 1;
             padding: 10px 14px;
             border-radius: 12px;
-            border: 1px solid rgba(156, 176, 210, 0.2);
-            background: rgba(8, 13, 29, 0.82);
-            color: #f5f8ff;
+            border: 1px solid var(--line);
+            background: var(--control-bg);
+            color: var(--control-text);
             font: inherit;
             font-size: 14px;
         }
@@ -361,7 +362,7 @@
         .share-viewer-email {
             flex: 1;
             font-size: 14px;
-            color: #f5f8ff;
+            color: var(--control-text);
             word-break: break-all;
         }
 
@@ -436,7 +437,7 @@
         .shared-person-name {
             font-size: 14px;
             font-weight: 600;
-            color: #f5f8ff;
+            color: var(--text);
         }
 
         .shared-person-sub {
@@ -477,8 +478,8 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            border: 1px solid rgba(156, 176, 210, 0.2);
-            background: rgba(8, 13, 29, 0.7);
+            border: 1px solid var(--line);
+            background: var(--control-bg);
             color: var(--muted);
             font-size: 20px;
             line-height: 1;
@@ -488,7 +489,7 @@
             justify-content: center;
         }
 
-        .trends-modal-close:hover { color: #f5f8ff; }
+        .trends-modal-close:hover { color: var(--text); }
 
         .trends-modal-title {
             margin: 0 0 24px;
@@ -496,7 +497,7 @@
             color: var(--muted);
         }
 
-        .trends-modal-title strong { color: #f5f8ff; }
+        .trends-modal-title strong { color: var(--text); }
     </style>
 </head>
 

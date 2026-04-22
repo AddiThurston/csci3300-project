@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
+    <script src="theme-early.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js"></script>
     <style>
@@ -36,7 +37,7 @@
             font-size: clamp(1.55rem, 3.2vw, 2.05rem);
             font-weight: 700;
             letter-spacing: -0.02em;
-            color: #f4f7ff;
+            color: var(--text);
         }
 
         .bubble-dashboard__intro p {
@@ -278,6 +279,77 @@
                     0 16px 38px rgba(4, 10, 28, 0.62),
                     0 0 46px var(--bubble-glow);
                 filter: brightness(1.2) saturate(1.2);
+            }
+        }
+
+        /* Lighter themes: no heavy “shadow blob”; softer glass, readable orbit */
+        :root[data-theme="light"] .bubble-dashboard__stage::before,
+        :root[data-theme="meadow"] .bubble-dashboard__stage::before {
+            background: radial-gradient(circle, rgba(95, 140, 255, 0.12), transparent 68%);
+        }
+        :root[data-theme="light"] .bubble-dashboard__stage::after,
+        :root[data-theme="meadow"] .bubble-dashboard__stage::after {
+            background: radial-gradient(circle, rgba(103, 240, 255, 0.1), transparent 70%);
+        }
+        :root[data-theme="light"] .bubble-dashboard__ring,
+        :root[data-theme="meadow"] .bubble-dashboard__ring {
+            border: 1px solid var(--line);
+            background: radial-gradient(circle at 50% 50%, rgba(95, 140, 255, 0.08), transparent 55%);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.05);
+        }
+        :root[data-theme="light"] .bubble-dashboard__core,
+        :root[data-theme="meadow"] .bubble-dashboard__core {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            box-shadow: 0 8px 28px rgba(15, 40, 100, 0.1);
+        }
+        :root[data-theme="light"] .bubble-dashboard__core-inner span,
+        :root[data-theme="meadow"] .bubble-dashboard__core-inner span {
+            color: var(--muted);
+        }
+        :root[data-theme="light"] .nav-bubble,
+        :root[data-theme="meadow"] .nav-bubble {
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            background:
+                radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.06) 30%, transparent 44%),
+                radial-gradient(circle at 72% 80%, rgba(0, 0, 0, 0.08), transparent 58%),
+                linear-gradient(145deg, var(--bubble-c1), var(--bubble-c2));
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.45) inset,
+                0 6px 18px rgba(15, 50, 90, 0.1),
+                0 0 16px var(--bubble-glow);
+        }
+        :root[data-theme="light"] .nav-bubble:hover,
+        :root[data-theme="light"] .nav-bubble:focus-visible,
+        :root[data-theme="meadow"] .nav-bubble:hover,
+        :root[data-theme="meadow"] .nav-bubble:focus-visible {
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+                0 10px 24px rgba(15, 50, 90, 0.14),
+                0 0 28px var(--bubble-glow);
+            color: #fff;
+        }
+        /* Use animation-name only — the full "animation" shorthand reset animation-delay to 0 and
+           stacked all four bubbles; only the last DOM child (Trends) looked visible. */
+        :root[data-theme="light"] .nav-bubble,
+        :root[data-theme="meadow"] .nav-bubble {
+            animation-name: bubble-orbit, bubble-pulse-light;
+        }
+        @keyframes bubble-pulse-light {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.35) inset,
+                    0 6px 16px rgba(15, 50, 90, 0.1),
+                    0 0 12px var(--bubble-glow);
+                filter: brightness(0.97) saturate(0.95);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+                    0 10px 22px rgba(15, 50, 90, 0.12),
+                    0 0 24px var(--bubble-glow);
+                filter: brightness(1.06) saturate(1.08);
             }
         }
 

@@ -2,6 +2,8 @@
     box-sizing: border-box;
 }
 
+/* Theme: set `data-theme` on <html> (see theme-early.js + app.js). All pages load theme-early.js
+   before this file so :root[data-theme] tokens apply to the whole document tree. */
 /* Theme tokens for consistent color usage. */
 :root {
     --bg-1: #050816;
@@ -23,6 +25,11 @@
     --control-text: var(--text);
     --control-placeholder: var(--muted);
     --date-color-scheme: dark;
+}
+
+html {
+    color: var(--text);
+    min-height: 100%;
 }
 
 body {
