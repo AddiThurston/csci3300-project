@@ -160,12 +160,20 @@ class ChatAgentContractTests(unittest.TestCase):
 
         prompt = call.kwargs["contents"]
         self.assertIn("User Question:", prompt)
+        self.assertIn("Date Context:", prompt)
         self.assertIn("Journal Entries:", prompt)
         self.assertIn("Check-In Trends:", prompt)
         self.assertIn("Questionnaire Responses:", prompt)
         self.assertIn("What patterns do you notice this week?", prompt)
         self.assertIn("I felt overwhelmed studying for exams.", prompt)
         self.assertIn("I felt more grounded after taking a walk.", prompt)
+        self.assertIn("Use the timestamps below to reason about chronology", prompt)
+        self.assertIn("Journal window:", prompt)
+        self.assertIn("Most recent journal entry:", prompt)
+        self.assertIn("Check-in window:", prompt)
+        self.assertIn("Questionnaire window:", prompt)
+        self.assertIn("1970-01-01 00:00:01 UTC", prompt)
+        self.assertIn("1970-01-01 00:00:02 UTC", prompt)
         self.assertIn("Improving", prompt)
         self.assertIn("calm", prompt.lower())
         self.assertIn("mood", prompt.lower())
@@ -202,6 +210,54 @@ class ChatAgentContractTests(unittest.TestCase):
         self.assertIn("steady", prompt)
         self.assertNotIn("This belongs to another user and must never be sent.", prompt)
         self.assertNotIn("private", prompt)
+
+    def test_accepts_supplied_checkin_and_questionnaire_drafts(self):
+        ai_client = MagicMock()
+        ai_client.models.generate_content.return_value = MagicMock(text="Draft context included.")
+
+        supplied_checkins = [
+            {
+                "words": ["anxious", "tired"],
+                "moodScore": 28,
+                "moodLabel": "Low",
+                "timestamp": 4_000,
+            }
+        ]
+        supplied_questionnaires = [
+            {
+                "responses": {
+                    "mood": 2,
+                    "sleep": 1,
+                    "energy": 2,
+                    "focus": 2,
+                },
+                "timestamp": 5_000,
+            }
+        ]
+
+        with patch.object(server, "client", ai_client, create=True), patch.object(
+            server, "MODEL_NAME", "gemini-2.5-flash", create=True
+        ):
+            response = self.client.post(
+                "/api/gemini",
+                data=json.dumps(
+                    {
+                        "message": "What stands out in the draft answers I have right now?",
+                        "checkins": supplied_checkins,
+                        "questionnaires": supplied_questionnaires,
+                    }
+                ),
+                headers=self.headers,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        prompt = ai_client.models.generate_content.call_args.kwargs["contents"]
+        self.assertIn("anxious", prompt.lower())
+        self.assertIn("tired", prompt.lower())
+        self.assertIn("Recent questionnaire responses", prompt)
+        self.assertIn("Mood: 2", prompt)
+        self.assertIn("Sleep: 1", prompt)
+        self.assertIn("What stands out in the draft answers I have right now?", prompt)
 
     def test_handles_missing_history_with_clear_placeholders(self):
         ai_client = MagicMock()

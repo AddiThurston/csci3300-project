@@ -218,6 +218,160 @@ header.top-bar {
     line-height: 1.65;
 }
 
+.questionnaire-layout {
+    width: min(1140px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.questionnaire-form-panel,
+.questionnaire-history-panel {
+    padding: 24px;
+}
+
+.questionnaire-kicker {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.questionnaire-form-panel h1 {
+    margin: 0 0 10px;
+    font-size: clamp(1.7rem, 3vw, 2.2rem);
+}
+
+.questionnaire-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.questionnaire-question {
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: rgba(8, 14, 31, 0.46);
+}
+
+.questionnaire-question-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+
+.questionnaire-question-header p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.questionnaire-question-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(95, 140, 255, 0.18);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    flex: 0 0 auto;
+}
+
+.questionnaire-scale {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.questionnaire-option {
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 8px;
+    background: rgba(8, 14, 31, 0.35);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+}
+
+.questionnaire-option:hover {
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.questionnaire-option.is-selected {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+.questionnaire-option-value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.questionnaire-option-label {
+    font-size: 11px;
+}
+
+.questionnaire-error {
+    display: none;
+    margin: 14px 0 0;
+    color: var(--danger);
+    font-size: 13px;
+}
+
+.questionnaire-history-panel .history-header {
+    margin-bottom: 16px;
+}
+
+.questionnaire-history-panel .history-header h3 {
+    margin: 0 0 6px;
+}
+
+.questionnaire-history-item {
+    padding: 16px;
+}
+
+.questionnaire-entry-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.questionnaire-metric {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(140, 179, 255, 0.15);
+}
+
+.questionnaire-metric-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+    .questionnaire-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
 .button-row {
     margin-top: 20px;
     display: flex;
@@ -633,6 +787,14 @@ header.top-bar {
         flex-direction: column;
         align-items: stretch;
     }
+
+    .questionnaire-scale {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .questionnaire-entry-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .journal-layout {
@@ -644,18 +806,33 @@ header.top-bar {
     max-width: 1040px;
 }
 
+.journal-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
 .entry-form {
     padding: 24px;
 }
 
 .entry-form h2,
-.entries-panel h2 {
+.entries-panel h2,
+.gemini-drawer h2 {
     margin: 0 0 16px;
     font-size: 18px;
 }
 
+.panel-subtitle {
+    margin: -6px 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
 .entry-form input,
 .entry-form textarea,
+.gemini-drawer textarea,
 .username-card input {
     width: 100%;
     border: 1px solid var(--line);
@@ -676,6 +853,7 @@ header.top-bar {
 
 .entry-form input:focus,
 .entry-form textarea:focus,
+.gemini-drawer textarea:focus,
 .username-card input:focus {
     outline: none;
     border-color: var(--primary);
@@ -688,6 +866,163 @@ header.top-bar {
 
 .entries-panel {
     padding: 24px;
+}
+
+.ai-response-shell {
+    margin-top: 16px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(8, 14, 31, 0.55);
+}
+
+.ai-response-placeholder,
+.ai-response-text,
+.ai-response-error {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.ai-response-placeholder {
+    color: var(--muted);
+}
+
+.ai-response-text {
+    color: #d7e3ff;
+    white-space: pre-wrap;
+}
+
+.ai-response-error {
+    color: #ffd7dd;
+}
+
+.gemini-tab {
+    position: fixed;
+    top: 152px;
+    right: 0;
+    z-index: 42;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    min-width: 72px;
+    padding: 18px 16px 18px 18px;
+    border: 1px solid rgba(103, 240, 255, 0.35);
+    border-right: none;
+    border-radius: 18px 0 0 18px;
+    background: linear-gradient(180deg, rgba(14, 24, 53, 0.96), rgba(34, 76, 168, 0.92));
+    color: #ffffff;
+    box-shadow: 0 18px 32px rgba(4, 10, 28, 0.42);
+    cursor: pointer;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, right 0.28s ease;
+}
+
+.gemini-tab:hover {
+    transform: translateX(-3px);
+    box-shadow: 0 20px 34px rgba(4, 10, 28, 0.5);
+}
+
+.gemini-tab-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.gemini-tab-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 14px rgba(103, 240, 255, 0.9);
+}
+
+.gemini-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(2, 7, 17, 0.44);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s ease;
+}
+
+.gemini-drawer {
+    position: fixed;
+    top: 98px;
+    right: 18px;
+    bottom: 18px;
+    z-index: 40;
+    width: min(420px, calc(100vw - 32px));
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(calc(100% + 28px));
+    transition: transform 0.28s ease, opacity 0.22s ease;
+}
+
+.gemini-drawer textarea {
+    min-height: 132px;
+    margin-bottom: 12px;
+    resize: vertical;
+}
+
+.gemini-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.gemini-kicker {
+    margin: 0 0 6px;
+    color: var(--accent);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.gemini-close {
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: rgba(8, 14, 31, 0.5);
+    color: var(--muted);
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.gemini-close:hover {
+    color: #ffffff;
+    background: rgba(95, 140, 255, 0.18);
+    border-color: rgba(95, 140, 255, 0.28);
+}
+
+body.gemini-open .gemini-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.gemini-open .gemini-drawer {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+body.gemini-open .gemini-tab {
+    right: calc(min(420px, calc(100vw - 32px)) + 18px);
 }
 
 .entries-list {
@@ -865,7 +1200,44 @@ mark {
         padding: 24px 14px 40px;
     }
 
+    .questionnaire-layout {
+        grid-template-columns: 1fr;
+    }
+
     .journal-layout {
         grid-template-columns: 1fr;
+    }
+
+    .gemini-tab {
+        top: auto;
+        right: 16px;
+        bottom: 18px;
+        min-width: 0;
+        border-right: 1px solid rgba(103, 240, 255, 0.35);
+        border-radius: 999px;
+        padding: 12px 16px;
+    }
+
+    .gemini-tab:hover {
+        transform: translateY(-2px);
+    }
+
+    .gemini-tab-label {
+        writing-mode: initial;
+        transform: none;
+        font-size: 12px;
+    }
+
+    .gemini-drawer {
+        top: auto;
+        right: 14px;
+        bottom: 72px;
+        left: 14px;
+        width: auto;
+        max-height: calc(100vh - 128px);
+    }
+
+    body.gemini-open .gemini-tab {
+        right: 16px;
     }
 }

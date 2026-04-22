@@ -1,6 +1,8 @@
 import json
 import os
 import time
+from collections import Counter
+from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -31,8 +33,28 @@ redis = Redis(
     token=os.environ.get("UPSTASH_REDIS_REST_TOKEN", "local-dev-token"),
 )
 
-client = genai.Client()
+client = None
 MODEL_NAME = "gemini-2.5-flash-lite"
+
+
+def get_ai_client():
+    global client
+    if client is not None:
+        return client
+
+    api_key = (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("GOOGLE_GENAI_API_KEY")
+    )
+    if not api_key:
+        return None
+
+    try:
+        client = genai.Client(api_key=api_key)
+    except Exception:
+        client = None
+    return client
 
 def verify_google_credential(id_token):
     query = urlencode({"id_token": id_token})
@@ -65,6 +87,270 @@ def get_username():
     if not user:
         return None
     return (user.get("email") or user.get("sub") or "").strip() or None
+
+
+def load_user_records(bucket, username):
+    data = redis.hgetall(f"{bucket}:{username}")
+    if not data:
+        return []
+
+    records = [json.loads(value) for value in data.values()]
+    records.sort(key=lambda record: record.get("timestamp", 0), reverse=True)
+    return records
+
+
+def format_timestamp(timestamp_ms):
+    if not isinstance(timestamp_ms, (int, float)):
+        return "Unknown time"
+    return datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def normalize_journal_entries(entries):
+    normalized = []
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+
+        content = str(entry.get("content") or "").strip()
+        if not content:
+            continue
+
+        timestamp = entry.get("timestamp")
+        timestamp = int(timestamp) if isinstance(timestamp, (int, float)) else 0
+        normalized.append(
+            {
+                "title": str(entry.get("title") or "Untitled").strip() or "Untitled",
+                "content": content,
+                "timestamp": timestamp,
+            }
+        )
+
+    normalized.sort(key=lambda entry: entry["timestamp"], reverse=True)
+    return normalized[:8]
+
+
+def format_journal_context(entries):
+    entries = normalize_journal_entries(entries)
+    if not entries:
+        return "No journal entries available."
+
+    lines = []
+    for entry in entries:
+        lines.append(f"- [{format_timestamp(entry['timestamp'])}] {entry['title']}")
+        lines.append(f"  {entry['content'][:1200]}")
+    return "\n".join(lines)
+
+
+def normalize_checkins(entries):
+    normalized = []
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+
+        mood_score = entry.get("moodScore")
+        if not isinstance(mood_score, (int, float)):
+            continue
+
+        timestamp = entry.get("timestamp")
+        timestamp = int(timestamp) if isinstance(timestamp, (int, float)) else 0
+        raw_words = entry.get("words")
+        words = []
+        if isinstance(raw_words, list):
+            words = [str(word).strip() for word in raw_words if str(word).strip()]
+
+        normalized.append(
+            {
+                "words": words[:3],
+                "moodScore": int(mood_score),
+                "moodLabel": str(entry.get("moodLabel") or "Unknown").strip() or "Unknown",
+                "timestamp": timestamp,
+            }
+        )
+
+    normalized.sort(key=lambda entry: entry["timestamp"], reverse=True)
+    return normalized[:12]
+
+
+def summarize_checkins(entries):
+    entries = normalize_checkins(entries)
+    if not entries:
+        return "No check-ins available."
+
+    chronological = sorted(entries, key=lambda entry: entry.get("timestamp", 0))
+    scores = [
+        int(entry.get("moodScore"))
+        for entry in chronological
+        if isinstance(entry.get("moodScore"), (int, float))
+    ]
+    if not scores:
+        return "No check-ins available."
+
+    delta = scores[-1] - scores[0]
+    if delta >= 5:
+        trend_label = "Improving"
+    elif delta <= -5:
+        trend_label = "Declining"
+    else:
+        trend_label = "Stable"
+
+    words = []
+    for entry in chronological:
+        raw_words = entry.get("words")
+        if isinstance(raw_words, list):
+            words.extend(str(word).strip().lower() for word in raw_words if str(word).strip())
+
+    common_words = Counter(words).most_common(5)
+    word_summary = ", ".join(f"{word} ({count})" for word, count in common_words) if common_words else "None"
+    latest = chronological[-1]
+    latest_label = str(latest.get("moodLabel") or "Unknown").strip() or "Unknown"
+
+    return "\n".join(
+        [
+            f"Mood trend: {trend_label}",
+            f"Average mood score: {sum(scores) / len(scores):.1f}",
+            f"Latest mood: {latest_label} ({scores[-1]}) on {format_timestamp(latest.get('timestamp'))}",
+            f"Common check-in words: {word_summary}",
+        ]
+    )
+
+
+QUESTIONNAIRE_QUESTIONS = (
+    ("mood", "Mood"),
+    ("sleep", "Sleep"),
+    ("energy", "Energy"),
+    ("calm", "Calm"),
+    ("connection", "Connection"),
+    ("motivation", "Motivation"),
+    ("focus", "Focus"),
+    ("responsibilities", "Responsibilities"),
+    ("hope", "Hope"),
+    ("anxiety_free", "Freedom From Anxiety"),
+    ("progress", "Progress"),
+    ("physical", "Physical Health"),
+    ("grounded", "Grounded"),
+)
+QUESTIONNAIRE_QUESTION_IDS = {question_id for question_id, _ in QUESTIONNAIRE_QUESTIONS}
+
+
+def normalize_questionnaire_entries(entries):
+    normalized = []
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+
+        responses = entry.get("responses")
+        if not isinstance(responses, dict):
+            continue
+
+        cleaned = {}
+        for question_id, score in responses.items():
+            if question_id not in QUESTIONNAIRE_QUESTION_IDS:
+                continue
+            if not isinstance(score, (int, float)):
+                continue
+            cleaned[question_id] = int(score)
+
+        if not cleaned:
+            continue
+
+        timestamp = entry.get("timestamp")
+        timestamp = int(timestamp) if isinstance(timestamp, (int, float)) else 0
+        normalized.append(
+            {
+                "responses": cleaned,
+                "timestamp": timestamp,
+            }
+        )
+
+    normalized.sort(key=lambda entry: entry["timestamp"], reverse=True)
+    return normalized[:6]
+
+
+def format_questionnaire_context(entries):
+    entries = normalize_questionnaire_entries(entries)
+    if not entries:
+        return "No questionnaire responses available."
+
+    lines = ["Recent questionnaire responses (newest first):"]
+    for entry in entries[:4]:
+        responses = entry["responses"]
+        average = sum(responses.values()) / len(responses)
+        score_parts = []
+        for question_id, label in QUESTIONNAIRE_QUESTIONS:
+            score = responses.get(question_id)
+            if score is not None:
+                score_parts.append(f"{label}: {int(score)}")
+        lines.append(f"- [{format_timestamp(entry['timestamp'])}] Average: {average:.1f}/5")
+        lines.append(f"  {'; '.join(score_parts)}")
+    return "\n".join(lines)
+
+
+def build_date_context(journal_entries, checkins, questionnaires):
+    lines = [
+        (
+            "Use the timestamps below to reason about chronology, recency, and whether a pattern is recent, "
+            "recurring, or older context. Keep that as internal analysis support and avoid explicitly mentioning "
+            "exact dates unless the user's question needs them."
+        )
+    ]
+
+    normalized_entries = normalize_journal_entries(journal_entries)
+    if normalized_entries:
+        newest_entry = normalized_entries[0]
+        oldest_entry = normalized_entries[-1]
+        lines.append(
+            "Journal window: "
+            f"{format_timestamp(oldest_entry['timestamp'])} to {format_timestamp(newest_entry['timestamp'])} "
+            f"({len(normalized_entries)} entries, listed newest first)."
+        )
+        lines.append(f"Most recent journal entry: {format_timestamp(newest_entry['timestamp'])}.")
+    else:
+        lines.append("Journal window: No journal entries available.")
+
+    checkins = normalize_checkins(checkins)
+    if checkins:
+        chronological_checkins = sorted(checkins, key=lambda entry: entry.get("timestamp", 0))
+        lines.append(
+            "Check-in window: "
+            f"{format_timestamp(chronological_checkins[0].get('timestamp'))} to "
+            f"{format_timestamp(chronological_checkins[-1].get('timestamp'))} "
+            f"({len(chronological_checkins)} check-ins)."
+        )
+    else:
+        lines.append("Check-in window: No check-ins available.")
+
+    questionnaires = normalize_questionnaire_entries(questionnaires)
+    if questionnaires:
+        chronological_questionnaires = sorted(questionnaires, key=lambda entry: entry.get("timestamp", 0))
+        lines.append(
+            "Questionnaire window: "
+            f"{format_timestamp(chronological_questionnaires[0].get('timestamp'))} to "
+            f"{format_timestamp(chronological_questionnaires[-1].get('timestamp'))} "
+            f"({len(chronological_questionnaires)} responses)."
+        )
+    else:
+        lines.append("Questionnaire window: No questionnaire responses available.")
+
+    return "\n".join(lines)
+
+
+def build_ai_prompt(user_message, journal_entries, checkins, questionnaires):
+    return "\n\n".join(
+        [
+            (
+                "You are a supportive mental health assistant for a student wellness journal. "
+                "Answer with empathy, keep the response concise, ground your answer in the provided history, "
+                "and avoid making clinical diagnoses. Pay close attention to dates and timestamps so you can "
+                "weigh recent entries more heavily and identify changes over time. Use that timing information "
+                "to improve the analysis, but do not explicitly mention exact dates unless the user's question requires it."
+            ),
+            f"User Question:\n{user_message}",
+            f"Date Context:\n{build_date_context(journal_entries, checkins, questionnaires)}",
+            f"Journal Entries:\n{format_journal_context(journal_entries)}",
+            f"Check-In Trends:\n{summarize_checkins(checkins)}",
+            f"Questionnaire Responses:\n{format_questionnaire_context(questionnaires)}",
+        ]
+    )
 
 
 # Serve HTML files
@@ -239,13 +525,6 @@ def delete_checkin(checkin_id):
     return jsonify({"success": True})
 
 
-QUESTIONNAIRE_QUESTION_IDS = {
-    "mood", "sleep", "energy", "calm", "connection", "motivation",
-    "focus", "responsibilities", "hope", "anxiety_free", "progress",
-    "physical", "grounded",
-}
-
-
 # POST /api/questionnaire — save a check-in questionnaire response
 @app.post("/api/questionnaire")
 def create_questionnaire():
@@ -301,16 +580,44 @@ def get_ai_insight():
     if not username:
         return jsonify(AUTH_REQUIRED_ERROR), 401
 
-    prompt = request.get_json()
-    content = (prompt or {}).get("content", "").strip()
-    if not content:
-        return jsonify({"error": "Content is required"}), 400
-    
-    ai_output = client.models.generate_content(
-    model=MODEL_NAME, contents= content)
-    text = ai_output.text
-    print(text)
-    return {'message': text}, 201
+    body = request.get_json(silent=True) or {}
+    message = str(body.get("message") or body.get("content") or "").strip()
+    if not message:
+        return jsonify({"error": "message is required"}), 400
+
+    supplied_entries = body.get("journalEntries")
+    if isinstance(supplied_entries, list):
+        journal_entries = normalize_journal_entries(supplied_entries)
+    else:
+        journal_entries = load_user_records("journal", username)
+
+    supplied_checkins = body.get("checkins")
+    if isinstance(supplied_checkins, list):
+        checkins = normalize_checkins(supplied_checkins)
+    else:
+        checkins = load_user_records("checkin", username)
+
+    supplied_questionnaires = body.get("questionnaires")
+    if isinstance(supplied_questionnaires, list):
+        questionnaires = normalize_questionnaire_entries(supplied_questionnaires)
+    else:
+        questionnaires = load_user_records("questionnaire", username)
+    prompt = build_ai_prompt(message, journal_entries, checkins, questionnaires)
+
+    ai_client = get_ai_client()
+    if ai_client is None:
+        return jsonify({"error": "Chat service unavailable"}), 502
+
+    try:
+        ai_output = ai_client.models.generate_content(model=MODEL_NAME, contents=prompt)
+    except Exception:
+        return jsonify({"error": "Chat service unavailable"}), 502
+
+    reply = str(getattr(ai_output, "text", "") or "").strip()
+    if not reply:
+        return jsonify({"error": "Chat service unavailable"}), 502
+
+    return jsonify({"reply": reply, "message": reply})
 
 
 if __name__ == "__main__":

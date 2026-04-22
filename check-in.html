@@ -1,10 +1,8 @@
 <!doctype html>
 <!-- InSiteful Mind by Addison Thurston, David Pan, Kysen Krishnaswamy, and Prabhnoor Singh -->
-<!-- WIP -->
 <html lang="en">
 
 <head>
-    <!-- Meta tags, title, and link to stylesheet -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Check-In</title>
@@ -13,17 +11,8 @@
 </head>
 
 <body>
-    <script>
-        (async () => {
-            const sessionData = await globalThis.getSession?.();
-            if (!sessionData?.user) {
-                globalThis.location.href = "login.html";
-            }
-        })();
-    </script>
     <header class="top-bar">
         <a href="index.html" style="text-decoration:none;"><div class="insite-logo"> InSiteful Mind </div></a>
-        <!-- Navigation buttons -->
         <nav class="wrap row" aria-label="Primary navigation">
             <a href="journal.html"><button class="main-button"> Journal </button></a>
             <a href="check-in.html"><button class="main-button"> Check-In </button></a>
@@ -32,20 +21,216 @@
         </nav>
     </header>
 
-    <main class="container">
-        <!-- Placeholder for questionnaire -->
-        <section class="placeholder-shell panel">
-            <h1>Questionnaire Coming Soon</h1>
-            <p>
-                This page will host a guided daily questionnaire. For now, this placeholder is in place while
-                questionnaire prompts, scoring, and results flow are being designed.
-            </p>
-            <div class="button-row">
-                <a href="three-word-reflection.html"><button class="main-button">Go to Three-Word Reflection</button></a>
-                <a href="trends.html"><button class="main-button">View Trends Placeholder</button></a>
-            </div>
-        </section>
+    <main class="container container-top">
+        <div class="questionnaire-layout">
+            <section class="questionnaire-form-panel panel">
+                <p class="questionnaire-kicker">Guided Check-In</p>
+                <h1>Daily Questionnaire</h1>
+                <p class="panel-subtitle">Rate each area from 1 to 5 so you can track how things shift over time.</p>
+                <div id="questionnaire-list" class="questionnaire-list"></div>
+                <p id="questionnaire-error" class="questionnaire-error">Please answer all questions before saving.</p>
+                <div class="submit-row">
+                    <button class="main-button" id="questionnaire-save-btn" type="button" onclick="submitQuestionnaire()">Save Check-In</button>
+                    <button class="skip-link" id="questionnaire-refresh-btn" type="button" onclick="loadQuestionnaireHistory()">Refresh History</button>
+                </div>
+            </section>
+
+            <aside class="questionnaire-history-panel panel">
+                <div class="history-header">
+                    <h3>Recent Questionnaire Entries</h3>
+                    <p id="questionnaire-history-meta"></p>
+                </div>
+                <div id="questionnaire-history-list">
+                    <p class="history-status">Loading recent questionnaire entries...</p>
+                </div>
+            </aside>
+        </div>
     </main>
+
+    <script type="module">
+        const sessionData = await globalThis.requireAuth();
+        if (!sessionData || !sessionData.user) {
+            throw new Error("Authentication required");
+        }
+
+        const QUESTIONS = [
+            { id: "mood",             label: "How would you rate your overall mood today?" },
+            { id: "sleep",            label: "How well have you been sleeping?" },
+            { id: "energy",           label: "How is your energy level?" },
+            { id: "calm",             label: "How calm and relaxed do you feel?" },
+            { id: "connection",       label: "How connected do you feel to others?" },
+            { id: "motivation",       label: "How motivated do you feel?" },
+            { id: "focus",            label: "How well are you able to focus?" },
+            { id: "responsibilities", label: "How well are you managing your daily responsibilities?" },
+            { id: "hope",             label: "How hopeful do you feel about the future?" },
+            { id: "anxiety_free",     label: "How free from worry or anxiety do you feel?" },
+            { id: "progress",         label: "How satisfied are you with your recent progress?" },
+            { id: "physical",         label: "How well are you taking care of your physical health?" },
+            { id: "grounded",         label: "How present and grounded do you feel?" },
+        ];
+        const SCALE_LABELS = { 1: "Very Low", 2: "Low", 3: "Moderate", 4: "Good", 5: "Great" };
+
+        let qResponses = {};
+        let questionnaireEntries = [];
+
+        function authHeaders() {
+            return {
+                "Content-Type": "application/json",
+            };
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        function formatDate(msTimestamp) {
+            const date = new Date(msTimestamp);
+            if (Number.isNaN(date.getTime())) return "Unknown date";
+            return date.toLocaleString();
+        }
+
+        function averageScore(responses) {
+            const values = Object.values(responses || {}).filter((value) => typeof value === "number");
+            if (!values.length) return "0.0";
+            return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
+        }
+
+        function renderQuestionnaire() {
+            const list = document.getElementById("questionnaire-list");
+            list.innerHTML = QUESTIONS.map((question, index) => `
+                <article class="questionnaire-question">
+                    <div class="questionnaire-question-header">
+                        <span class="questionnaire-question-number">${index + 1}</span>
+                        <p>${question.label}</p>
+                    </div>
+                    <div class="questionnaire-scale">
+                        ${[1, 2, 3, 4, 5].map((value) => `
+                            <button
+                                type="button"
+                                class="questionnaire-option ${qResponses[question.id] === value ? "is-selected" : ""}"
+                                onclick="selectResponse('${question.id}', ${value})"
+                            >
+                                <span class="questionnaire-option-value">${value}</span>
+                                <span class="questionnaire-option-label">${SCALE_LABELS[value]}</span>
+                            </button>
+                        `).join("")}
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        function renderQuestionnaireHistory() {
+            const meta = document.getElementById("questionnaire-history-meta");
+            const list = document.getElementById("questionnaire-history-list");
+
+            meta.textContent = questionnaireEntries.length ? `${questionnaireEntries.length} recent entries loaded` : "";
+            if (!questionnaireEntries.length) {
+                list.innerHTML = `<p class="history-status">No questionnaire history yet.</p>`;
+                return;
+            }
+
+            list.innerHTML = questionnaireEntries.map((entry) => `
+                <article class="history-item questionnaire-history-item">
+                    <div class="history-row">
+                        <strong>Average ${escapeHtml(averageScore(entry.responses))} / 5</strong>
+                        <span class="history-date">${escapeHtml(formatDate(entry.timestamp))}</span>
+                    </div>
+                    <div class="questionnaire-entry-grid">
+                        ${QUESTIONS.map((question) => {
+                            const value = entry.responses?.[question.id];
+                            return `
+                                <div class="questionnaire-metric">
+                                    <span class="questionnaire-metric-label">${escapeHtml(question.label)}</span>
+                                    <strong>${value ?? "-"}</strong>
+                                </div>
+                            `;
+                        }).join("")}
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        async function loadQuestionnaireHistory() {
+            const refreshBtn = document.getElementById("questionnaire-refresh-btn");
+            const list = document.getElementById("questionnaire-history-list");
+            refreshBtn.disabled = true;
+            list.innerHTML = `<p class="history-status">Loading recent questionnaire entries...</p>`;
+
+            try {
+                const res = await fetch("/api/questionnaire", {
+                    method: "GET",
+                    headers: authHeaders(),
+                });
+                if (res.status === 401) {
+                    globalThis.location.href = "login.html";
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error("Failed to load questionnaire history");
+                }
+
+                const raw = await res.json();
+                questionnaireEntries = Array.isArray(raw) ? raw : [];
+                renderQuestionnaireHistory();
+            } catch {
+                questionnaireEntries = [];
+                list.innerHTML = `<p class="history-status">Could not load questionnaire history right now.</p>`;
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        async function submitQuestionnaire() {
+            if (QUESTIONS.some((question) => !(question.id in qResponses))) {
+                document.getElementById("questionnaire-error").style.display = "block";
+                return;
+            }
+
+            const btn = document.getElementById("questionnaire-save-btn");
+            btn.disabled = true;
+            btn.textContent = "Saving...";
+
+            try {
+                const res = await fetch("/api/questionnaire", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ responses: qResponses }),
+                });
+                if (!res.ok) {
+                    throw new Error("Failed to save questionnaire");
+                }
+
+                qResponses = {};
+                document.getElementById("questionnaire-error").style.display = "none";
+                renderQuestionnaire();
+                await loadQuestionnaireHistory();
+            } catch {
+                document.getElementById("questionnaire-error").textContent = "Could not save your check-in right now. Please try again.";
+                document.getElementById("questionnaire-error").style.display = "block";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Save Check-In";
+            }
+        }
+
+        function selectResponse(questionId, value) {
+            qResponses[questionId] = value;
+            document.getElementById("questionnaire-error").style.display = "none";
+            renderQuestionnaire();
+        }
+
+        renderQuestionnaire();
+        await loadQuestionnaireHistory();
+
+        window.selectResponse = selectResponse;
+        window.submitQuestionnaire = submitQuestionnaire;
+        window.loadQuestionnaireHistory = loadQuestionnaireHistory;
+    </script>
 </body>
 
 </html>

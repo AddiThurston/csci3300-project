@@ -107,11 +107,43 @@
         </div>
     </main>
 
+    <button
+        class="gemini-tab"
+        id="gemini-toggle"
+        type="button"
+        aria-controls="gemini-drawer"
+        aria-expanded="false"
+        onclick="toggleGeminiPanel()"
+    >
+        <span class="gemini-tab-label">Gemini</span>
+        <span class="gemini-tab-dot" aria-hidden="true"></span>
+    </button>
+
+    <div class="gemini-backdrop" id="gemini-backdrop" onclick="closeGeminiPanel()"></div>
+
+    <aside class="gemini-drawer panel" id="gemini-drawer" aria-hidden="true">
+        <div class="gemini-drawer-header">
+            <div>
+                <h2>Gemini</h2>
+            </div>
+            <button class="gemini-close" type="button" onclick="closeGeminiPanel()" aria-label="Close Gemini">&times;</button>
+        </div>
+        <p class="panel-subtitle">Ask about your recent reflections, mood shifts, or what your current word choices might suggest.</p>
+        <textarea id="ai-message" placeholder="What do my recent three-word reflections suggest about how I have been doing?"></textarea>
+        <button class="main-button full-width" id="ai-btn" onclick="askReflectionAI()">Ask AI</button>
+        <div class="ai-response-shell">
+            <p class="ai-response-placeholder" id="ai-placeholder">Gemini can look at your recent reflections and the words you are choosing right now.</p>
+            <p class="ai-response-text" id="ai-response" hidden></p>
+            <p class="ai-response-error" id="ai-error" hidden></p>
+        </div>
+    </aside>
+
     <script type="module">
         import {
             setActiveCategory,
             renderSelected,
             selectedWords,
+            toggleWord,
         } from "./word-system.js";
 
         const moodLevels = [
@@ -147,6 +179,7 @@
         const historyMeta = document.getElementById("history-meta");
         const historyBtn = document.getElementById("view-history-btn");
         let historyVisible = false;
+        let cachedCheckinEntries = [];
 
         function authHeaders() {
             return {
@@ -281,6 +314,29 @@
         }
         globalThis.submitCheckin = submitCheckin;
 
+        async function fetchCheckinHistory(limit = 10) {
+            const res = await fetch(`/api/checkin?limit=${limit}`, {
+                method: "GET",
+                headers: authHeaders(),
+            });
+            if (res.status === 401) {
+                globalThis.location.href = "login.html";
+                throw new Error("Authentication required");
+            }
+            if (!res.ok) {
+                throw new Error("Failed to load history");
+            }
+
+            const data = await res.json();
+            const entries = Array.isArray(data.entries) ? data.entries : [];
+            cachedCheckinEntries = entries;
+            return {
+                entries,
+                total: Number(data.total) || entries.length,
+                hasMore: Boolean(data.hasMore),
+            };
+        }
+
         async function viewPastEntries(options = {}) {
             const forceOpen = Boolean(options.forceOpen);
 
@@ -297,15 +353,7 @@
             historyBtn.disabled = true;
 
             try {
-                const res = await fetch("/api/checkin?limit=10", {
-                    method: "GET",
-                    headers: authHeaders(),
-                });
-                if (!res.ok) throw new Error("Failed to load history");
-                const data = await res.json();
-                const entries = Array.isArray(data.entries) ? data.entries : [];
-                const total = Number(data.total) || 0;
-                const hasMore = Boolean(data.hasMore);
+                const { entries, total, hasMore } = await fetchCheckinHistory(10);
 
                 historyMeta.textContent = `${entries.length} shown of ${total} total`;
                 if (entries.length) {
@@ -343,6 +391,119 @@
         }
         globalThis.viewPastEntries = viewPastEntries;
 
+        async function getCheckinsForAI() {
+            let entries = cachedCheckinEntries;
+            if (!entries.length) {
+                try {
+                    const history = await fetchCheckinHistory(10);
+                    entries = history.entries;
+                } catch {
+                    entries = [];
+                }
+            }
+
+            const currentWords = [...selectedWords];
+            if (currentWords.length) {
+                entries = [
+                    {
+                        words: currentWords,
+                        moodScore: Number(moodSlider.value),
+                        moodLabel: moodValue.textContent,
+                        timestamp: Date.now(),
+                    },
+                    ...entries,
+                ];
+            }
+
+            return entries;
+        }
+
+        function setGeminiPanelOpen(isOpen) {
+            document.body.classList.toggle("gemini-open", isOpen);
+            document.getElementById("gemini-toggle").setAttribute("aria-expanded", String(isOpen));
+            document.getElementById("gemini-drawer").setAttribute("aria-hidden", String(!isOpen));
+
+            if (isOpen) {
+                window.setTimeout(() => {
+                    document.getElementById("ai-message").focus();
+                }, 180);
+            }
+        }
+
+        function toggleGeminiPanel() {
+            setGeminiPanelOpen(!document.body.classList.contains("gemini-open"));
+        }
+
+        function closeGeminiPanel() {
+            setGeminiPanelOpen(false);
+        }
+
+        function showAIReply(reply) {
+            const placeholder = document.getElementById("ai-placeholder");
+            const response = document.getElementById("ai-response");
+            const error = document.getElementById("ai-error");
+
+            placeholder.hidden = true;
+            error.hidden = true;
+            response.hidden = false;
+            response.textContent = reply;
+        }
+
+        function showAIError(message) {
+            const placeholder = document.getElementById("ai-placeholder");
+            const response = document.getElementById("ai-response");
+            const error = document.getElementById("ai-error");
+
+            placeholder.hidden = true;
+            response.hidden = true;
+            error.hidden = false;
+            error.textContent = message;
+        }
+
+        async function askReflectionAI() {
+            const message = document.getElementById("ai-message").value.trim();
+            if (!message) {
+                setGeminiPanelOpen(true);
+                showAIError("Ask a question first so Gemini has something to respond to.");
+                return;
+            }
+
+            const btn = document.getElementById("ai-btn");
+            btn.disabled = true;
+            btn.textContent = "Thinking...";
+
+            try {
+                const checkins = await getCheckinsForAI();
+                const res = await fetch("/api/gemini", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        message,
+                        checkins,
+                    }),
+                });
+
+                if (res.status === 401) {
+                    globalThis.location.href = "login.html";
+                    return;
+                }
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || "Reflection AI is unavailable right now.");
+                }
+
+                setGeminiPanelOpen(true);
+                showAIReply(data.reply || data.message || "No response received.");
+            } catch (error) {
+                setGeminiPanelOpen(true);
+                showAIError(error.message || "Reflection AI is unavailable right now.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Ask AI";
+            }
+        }
+
         function sliderCategory(val) {
             // 7 levels, each mapped to its own word tier
             if (val <= 12) return 'abysmal';
@@ -358,9 +519,17 @@
             updateMoodLabel();
             setActiveCategory(sliderCategory(Number(moodSlider.value)));
         });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && document.body.classList.contains("gemini-open")) {
+                closeGeminiPanel();
+            }
+        });
         updateMoodLabel();
         setActiveCategory(sliderCategory(50));
         renderSelected();
+        globalThis.askReflectionAI = askReflectionAI;
+        globalThis.toggleGeminiPanel = toggleGeminiPanel;
+        globalThis.closeGeminiPanel = closeGeminiPanel;
     </script>
     <script>
         const QUESTIONS = [

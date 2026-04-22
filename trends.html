@@ -399,6 +399,38 @@
         </section>
     </main>
 
+    <button
+        class="gemini-tab"
+        id="gemini-toggle"
+        type="button"
+        aria-controls="gemini-drawer"
+        aria-expanded="false"
+        onclick="toggleGeminiPanel()"
+    >
+        <span class="gemini-tab-label">Gemini</span>
+        <span class="gemini-tab-dot" aria-hidden="true"></span>
+    </button>
+
+    <div class="gemini-backdrop" id="gemini-backdrop" onclick="closeGeminiPanel()"></div>
+
+    <aside class="gemini-drawer panel" id="gemini-drawer" aria-hidden="true">
+        <div class="gemini-drawer-header">
+            <div>
+                <p class="gemini-kicker">Trend Analyst</p>
+                <h2>Gemini</h2>
+            </div>
+            <button class="gemini-close" type="button" onclick="closeGeminiPanel()" aria-label="Close Gemini">&times;</button>
+        </div>
+        <p class="panel-subtitle">Ask about mood shifts, repeated emotions, weekly direction, or what your recent check-in pattern suggests.</p>
+        <textarea id="ai-message" placeholder="What stands out in my recent mood trend, and what emotions keep showing up?"></textarea>
+        <button class="main-button full-width" id="ai-btn" onclick="askTrendsAI()">Ask AI</button>
+        <div class="ai-response-shell">
+            <p class="ai-response-placeholder" id="ai-placeholder">Gemini can look at the same recent check-in history that powers this trends dashboard.</p>
+            <p class="ai-response-text" id="ai-response" hidden></p>
+            <p class="ai-response-error" id="ai-error" hidden></p>
+        </div>
+    </aside>
+
     <script type="module">
         const topWordsList = document.getElementById("topWords");
         const chartFrame = document.getElementById("chartFrame");
@@ -409,6 +441,7 @@
         }
 
         let moodChart = null;
+        let loadedCheckins = [];
 
         function authHeaders() {
             return {
@@ -436,8 +469,96 @@
             return moodLevels[index];
         }
 
+        function setGeminiPanelOpen(isOpen) {
+            document.body.classList.toggle("gemini-open", isOpen);
+            document.getElementById("gemini-toggle").setAttribute("aria-expanded", String(isOpen));
+            document.getElementById("gemini-drawer").setAttribute("aria-hidden", String(!isOpen));
+
+            if (isOpen) {
+                window.setTimeout(() => {
+                    document.getElementById("ai-message").focus();
+                }, 180);
+            }
+        }
+
+        function toggleGeminiPanel() {
+            setGeminiPanelOpen(!document.body.classList.contains("gemini-open"));
+        }
+
+        function closeGeminiPanel() {
+            setGeminiPanelOpen(false);
+        }
+
+        function showAIReply(reply) {
+            const placeholder = document.getElementById("ai-placeholder");
+            const response = document.getElementById("ai-response");
+            const error = document.getElementById("ai-error");
+
+            placeholder.hidden = true;
+            error.hidden = true;
+            response.hidden = false;
+            response.textContent = reply;
+        }
+
+        function showAIError(message) {
+            const placeholder = document.getElementById("ai-placeholder");
+            const response = document.getElementById("ai-response");
+            const error = document.getElementById("ai-error");
+
+            placeholder.hidden = true;
+            response.hidden = true;
+            error.hidden = false;
+            error.textContent = message;
+        }
+
+        async function askTrendsAI() {
+            const message = document.getElementById("ai-message").value.trim();
+            if (!message) {
+                setGeminiPanelOpen(true);
+                showAIError("Ask a question first so Gemini has something to respond to.");
+                return;
+            }
+
+            const btn = document.getElementById("ai-btn");
+            btn.disabled = true;
+            btn.textContent = "Thinking...";
+
+            try {
+                const res = await fetch("/api/gemini", {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        message,
+                        journalEntries: [],
+                        checkins: loadedCheckins,
+                        questionnaires: [],
+                    }),
+                });
+
+                if (res.status === 401) {
+                    globalThis.location.href = "login.html";
+                    return;
+                }
+
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || "Trends AI is unavailable right now.");
+                }
+
+                setGeminiPanelOpen(true);
+                showAIReply(data.reply || data.message || "No response received.");
+            } catch (error) {
+                setGeminiPanelOpen(true);
+                showAIError(error.message || "Trends AI is unavailable right now.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Ask AI";
+            }
+        }
+
         function resetDashboard() {
             trendCard.classList.remove("trend-up", "trend-down", "trend-flat");
+            loadedCheckins = [];
             document.getElementById("avgMood").textContent = "--";
             document.getElementById("avgMoodDetail").textContent = "We will calculate this as soon as check-ins appear.";
             document.getElementById("checkinCount").textContent = "0";
@@ -465,6 +586,7 @@
         }
 
         function renderDashboard(checkins) {
+            loadedCheckins = Array.isArray(checkins) ? [...checkins] : [];
             const sortedCheckins = [...checkins].sort((a, b) => a.timestamp - b.timestamp);
 
             const moodData = sortedCheckins.map(c => ({
@@ -666,8 +788,18 @@
             }
         }
 
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && document.body.classList.contains("gemini-open")) {
+                closeGeminiPanel();
+            }
+        });
+
         resetDashboard();
         await loadTrends();
+
+        window.toggleGeminiPanel = toggleGeminiPanel;
+        window.closeGeminiPanel = closeGeminiPanel;
+        window.askTrendsAI = askTrendsAI;
     </script>
     <script>
         const QUESTIONS = [
