@@ -61,3 +61,42 @@ globalThis.signInWithGoogleCredential = signInWithGoogleCredential;
 globalThis.getSession = getSession;
 globalThis.requireAuth = requireAuth;
 globalThis.logout = logout;
+
+const THEME_STORAGE_KEY = "insite-theme";
+const DEFAULT_THEME = "light";
+const VALID_THEMES = new Set(["light", "dark", "meadow", "forest", "twilight"]);
+
+function normalizeTheme(themeName) {
+    if (!themeName) return DEFAULT_THEME;
+    const normalized = String(themeName).trim().toLowerCase();
+    // Migrate old "bright" theme name to the new "dark" label.
+    if (normalized === "bright") return "dark";
+    return VALID_THEMES.has(normalized) ? normalized : DEFAULT_THEME;
+}
+
+function applyTheme(themeName) {
+    const theme = normalizeTheme(themeName);
+    const body = globalThis.document?.body;
+    if (body) {
+        body.dataset.theme = theme;
+    }
+    return theme;
+}
+
+function setTheme(themeName) {
+    const theme = applyTheme(themeName);
+    globalThis.localStorage?.setItem(THEME_STORAGE_KEY, theme);
+    return theme;
+}
+
+function getTheme() {
+    return normalizeTheme(globalThis.localStorage?.getItem(THEME_STORAGE_KEY));
+}
+
+globalThis.addEventListener("DOMContentLoaded", () => {
+    applyTheme(getTheme());
+});
+
+globalThis.setTheme = setTheme;
+globalThis.getTheme = getTheme;
+globalThis.applyTheme = applyTheme;

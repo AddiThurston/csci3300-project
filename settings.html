@@ -1,0 +1,89 @@
+<!doctype html>
+<!-- InSiteful Mind Settings -->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InSiteful Mind - Settings</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js"></script>
+</head>
+
+<body>
+    <script type="module">
+        const sessionData = await globalThis.getSession?.();
+        if (!sessionData?.user) {
+            globalThis.location.href = "login.html";
+        }
+    </script>
+
+    <header class="top-bar">
+        <a href="index.html" style="text-decoration:none;"><div class="insite-logo"> InSiteful Mind </div></a>
+        <div class="top-bar-actions">
+            <nav class="wrap row" aria-label="Quick links">
+                <a href="journal.html"><button type="button" class="main-button">Journal</button></a>
+                <a href="three-word-reflection.html"><button type="button" class="main-button">Three-Word</button></a>
+                <a href="trends.html"><button type="button" class="main-button">Trends</button></a>
+            </nav>
+            <a class="settings-gear" href="settings.html" title="Settings" aria-label="Open settings">⚙</a>
+        </div>
+    </header>
+
+    <main class="container container-top">
+        <section class="settings-shell panel">
+            <h1>Theme Settings</h1>
+            <p>Choose the look that feels best for your reflection space. Your theme is saved on this device and used across the app.</p>
+
+            <div class="theme-grid">
+                <button class="theme-option" type="button" data-theme="light">
+                    <div class="theme-swatch swatch-light"></div>
+                    <h3>Light</h3>
+                    <p>Simple, clean, and bright with soft backgrounds and clear text.</p>
+                </button>
+                <button class="theme-option" type="button" data-theme="dark">
+                    <div class="theme-swatch swatch-dark"></div>
+                    <h3>Dark</h3>
+                    <p>The original high-contrast neon look for late-night journaling.</p>
+                </button>
+                <button class="theme-option" type="button" data-theme="meadow">
+                    <div class="theme-swatch swatch-meadow"></div>
+                    <h3>Meadow</h3>
+                    <p>Brighter greens with a calm nature backdrop placeholder image.</p>
+                </button>
+                <button class="theme-option" type="button" data-theme="forest">
+                    <div class="theme-swatch swatch-forest"></div>
+                    <h3>Forest</h3>
+                    <p>Deep woodland tones with a darker nature image placeholder.</p>
+                </button>
+                <button class="theme-option" type="button" data-theme="twilight">
+                    <div class="theme-swatch swatch-twilight"></div>
+                    <h3>Twilight</h3>
+                    <p>Purple dusk palette for a softer nighttime mood.</p>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const themeButtons = Array.from(document.querySelectorAll(".theme-option"));
+
+        function syncThemeSelection() {
+            const activeTheme = globalThis.getTheme?.() || "light";
+            themeButtons.forEach((button) => {
+                button.classList.toggle("active", button.dataset.theme === activeTheme);
+            });
+        }
+
+        themeButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                globalThis.setTheme?.(button.dataset.theme);
+                syncThemeSelection();
+            });
+        });
+
+        syncThemeSelection();
+    </script>
+</body>
+
+</html>

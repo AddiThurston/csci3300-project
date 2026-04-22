@@ -55,7 +55,7 @@
             padding: 8px 12px;
             border: 1px solid rgba(103, 240, 255, 0.2);
             border-radius: 999px;
-            background: rgba(10, 17, 37, 0.68);
+            background: var(--control-bg-soft);
             color: var(--accent);
             font-size: 12px;
             font-weight: 700;
@@ -86,7 +86,7 @@
             padding: 18px;
             border-radius: 20px;
             border: 1px solid rgba(156, 176, 210, 0.18);
-            background: linear-gradient(180deg, rgba(17, 27, 57, 0.92), rgba(10, 16, 35, 0.88));
+            background: var(--surface-strong);
             box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
         }
 
@@ -103,7 +103,7 @@
             margin: 0;
             font-size: clamp(1.8rem, 3vw, 2.4rem);
             font-weight: 700;
-            color: #ffffff;
+            color: var(--text);
         }
 
         .metric-detail {
@@ -129,7 +129,7 @@
             padding: 22px;
             border-radius: 22px;
             border: 1px solid rgba(156, 176, 210, 0.18);
-            background: rgba(9, 15, 33, 0.74);
+            background: var(--surface);
         }
 
         .trend-card h2 {
@@ -173,8 +173,8 @@
             border: 1px solid rgba(156, 176, 210, 0.2);
             border-radius: 12px;
             padding: 10px 12px;
-            background: rgba(8, 13, 29, 0.82);
-            color: #f5f8ff;
+            background: var(--control-bg);
+            color: var(--control-text);
             font: inherit;
         }
 
@@ -193,7 +193,7 @@
         .chart-frame {
             padding: 26px 18px 18px;
             border-radius: 18px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            background: var(--surface-elevated);
             border: 1px solid rgba(156, 176, 210, 0.12);
             min-height: 340px;
         }
@@ -226,7 +226,7 @@
             border-radius: 999px;
             background: rgba(95, 140, 255, 0.12);
             border: 1px solid rgba(95, 140, 255, 0.18);
-            color: #f5f8ff;
+            color: var(--control-text);
             font-weight: 600;
         }
 
@@ -327,12 +327,15 @@
     </div>
     <header class="top-bar">
         <a href="index.html" style="text-decoration:none;"><div class="insite-logo"> InSiteful Mind </div></a>
-        <nav class="wrap row">
-            <a href="journal.html"><button class="main-button">Journal</button></a>
-            <button class="main-button" onclick="openQuestionnaire()">Check-In</button>
-            <a href="three-word-reflection.html"><button class="main-button">Three-Word</button></a>
-            <a href="trends.html"><button class="main-button">Trends</button></a>
-        </nav>
+        <div class="top-bar-actions">
+            <nav class="wrap row">
+                <a href="journal.html"><button class="main-button">Journal</button></a>
+                <button class="main-button" onclick="openQuestionnaire()">Check-In</button>
+                <a href="three-word-reflection.html"><button class="main-button">Three-Word</button></a>
+                <a href="trends.html"><button class="main-button">Trends</button></a>
+            </nav>
+            <a class="settings-gear" href="settings.html" title="Settings" aria-label="Open settings">⚙</a>
+        </div>
     </header>
 
     <main class="container container-top">
@@ -403,6 +406,9 @@
         const topWordsList = document.getElementById("topWords");
         const chartFrame = document.getElementById("chartFrame");
         const trendCard = document.getElementById("trendCard");
+        const themeVars = getComputedStyle(document.body);
+        const chartTextColor = themeVars.getPropertyValue("--text").trim() || "#e9f0ff";
+        const chartMutedColor = themeVars.getPropertyValue("--muted").trim() || "#9cb0d2";
         const sessionData = await globalThis.requireAuth();
         if (!sessionData || !sessionData.user) {
             throw new Error("Authentication required");
@@ -597,7 +603,7 @@
                     plugins: {
                         legend: {
                             labels: {
-                                color: "#e9f0ff"
+                                color: chartTextColor
                             }
                         },
                         tooltip: {
@@ -625,7 +631,7 @@
                     scales: {
                         x: {
                             ticks: {
-                                color: "#9cb0d2"
+                                color: chartMutedColor
                             },
                             grid: {
                                 color: "rgba(156, 176, 210, 0.1)"
@@ -636,7 +642,7 @@
                             suggestedMax: 100,
                             ticks: {
                                 stepSize: 10,
-                                color: "#9cb0d2",
+                                color: chartMutedColor,
                             },
                             grid: {
                                 color: "rgba(156, 176, 210, 0.1)"
@@ -694,7 +700,7 @@
                 <div style="margin-bottom:24px;">
                     <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:var(--text);">${i + 1}. ${q.label}</p>
                     <div style="display:flex;gap:8px;">
-                        ${[1,2,3,4,5].map(n => `<button id="q-btn-${q.id}-${n}" onclick="selectResponse('${q.id}', ${n})" style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);background:rgba(8,14,31,.45);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;" onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'" onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'">${n}<br><span style="font-size:10px;font-weight:400;">${SCALE_LABELS[n]}</span></button>`).join("")}
+                        ${[1,2,3,4,5].map(n => `<button id="q-btn-${q.id}-${n}" onclick="selectResponse('${q.id}', ${n})" style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);background:var(--control-bg-soft);color:var(--control-text);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;" onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'" onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'">${n}<br><span style="font-size:10px;font-weight:400;">${SCALE_LABELS[n]}</span></button>`).join("")}
                     </div>
                 </div>
             `).join("");
@@ -704,7 +710,7 @@
             [1,2,3,4,5].forEach(n => {
                 const btn = document.getElementById(`q-btn-${qid}-${n}`);
                 if (n === val) { btn.style.background="linear-gradient(135deg,var(--primary),var(--primary-dark))"; btn.style.borderColor="var(--primary)"; btn.style.color="#fff"; btn.dataset.selected="1"; }
-                else { btn.style.background="rgba(8,14,31,.45)"; btn.style.borderColor="var(--line)"; btn.style.color="var(--muted)"; delete btn.dataset.selected; }
+                else { btn.style.background="var(--control-bg-soft)"; btn.style.borderColor="var(--line)"; btn.style.color="var(--control-text)"; delete btn.dataset.selected; }
             });
             document.getElementById("q-error").style.display="none";
         }
