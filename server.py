@@ -13,8 +13,6 @@ from upstash_redis import Redis
 
 load_dotenv() # load the environment variables from the .env file
 
-gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-
 app = Flask(__name__, static_folder=".")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
 app.config.update(
@@ -32,6 +30,9 @@ redis = Redis(
     url=os.environ.get("UPSTASH_REDIS_REST_URL", "http://localhost:6379"),
     token=os.environ.get("UPSTASH_REDIS_REST_TOKEN", "local-dev-token"),
 )
+
+client = genai.Client()
+MODEL_NAME = "gemini-2.5-flash-lite"
 
 def verify_google_credential(id_token):
     query = urlencode({"id_token": id_token})
@@ -69,7 +70,7 @@ def get_username():
 # Serve HTML files
 @app.route("/", methods=["GET"])
 @app.route("/<path:filename>", methods=["GET"])
-def static_files(filename="index.html"):
+def static_files(filename="login.html"):
     return send_from_directory(".", filename)
 
 
@@ -234,7 +235,6 @@ def delete_checkin(checkin_id):
     username = get_username()
     if not username:
         return jsonify(AUTH_REQUIRED_ERROR), 401
-
     redis.hdel(f"checkin:{username}", checkin_id)
     return jsonify({"success": True})
 
@@ -294,6 +294,23 @@ def get_questionnaires():
     entries = [json.loads(v) for v in data.values()]
     entries.sort(key=lambda e: e["timestamp"], reverse=True)
     return jsonify(entries)
+
+@app.post("/api/gemini")
+def get_ai_insight():
+    username = get_username()
+    if not username:
+        return jsonify(AUTH_REQUIRED_ERROR), 401
+
+    prompt = request.get_json()
+    content = (prompt or {}).get("content", "").strip()
+    if not content:
+        return jsonify({"error": "Content is required"}), 400
+    
+    ai_output = client.models.generate_content(
+    model=MODEL_NAME, contents= content)
+    text = ai_output.text
+    print(text)
+    return {'message': text}, 201
 
 
 if __name__ == "__main__":

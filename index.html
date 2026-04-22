@@ -82,13 +82,27 @@
         }
 
         @keyframes drift-a {
-            from { transform: translate(0, 0) scale(1); opacity: 0.85; }
-            to { transform: translate(12px, 10px) scale(1.06); opacity: 1; }
+            from {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.85;
+            }
+
+            to {
+                transform: translate(12px, 10px) scale(1.06);
+                opacity: 1;
+            }
         }
 
         @keyframes drift-b {
-            from { transform: translate(0, 0) scale(1); opacity: 0.75; }
-            to { transform: translate(-14px, -8px) scale(1.08); opacity: 0.95; }
+            from {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.75;
+            }
+
+            to {
+                transform: translate(-14px, -8px) scale(1.08);
+                opacity: 0.95;
+            }
         }
 
         .bubble-dashboard__ring {
@@ -259,19 +273,23 @@
             from {
                 transform: rotate(0deg) translateY(calc(-1 * var(--orbit-r))) rotate(0deg);
             }
+
             to {
                 transform: rotate(360deg) translateY(calc(-1 * var(--orbit-r))) rotate(-360deg);
             }
         }
 
         @keyframes bubble-pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 box-shadow:
                     0 0 0 1px rgba(255, 255, 255, 0.14) inset,
                     0 10px 26px rgba(4, 10, 28, 0.44),
                     0 0 14px var(--bubble-glow);
                 filter: brightness(0.86) saturate(0.88);
             }
+
             50% {
                 box-shadow:
                     0 0 0 1px rgba(255, 255, 255, 0.36) inset,
@@ -289,6 +307,7 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
+
             .bubble-dashboard__stage::before,
             .bubble-dashboard__stage::after {
                 animation: none;
@@ -299,10 +318,21 @@
                 transform: rotate(var(--static-angle, 0deg)) translateY(calc(-1 * var(--orbit-r))) rotate(calc(-1 * var(--static-angle, 0deg)));
             }
 
-            .nav-bubble--journal { --static-angle: 0deg; }
-            .nav-bubble--checkin { --static-angle: 90deg; }
-            .nav-bubble--words { --static-angle: 180deg; }
-            .nav-bubble--trends { --static-angle: 270deg; }
+            .nav-bubble--journal {
+                --static-angle: 0deg;
+            }
+
+            .nav-bubble--checkin {
+                --static-angle: 90deg;
+            }
+
+            .nav-bubble--words {
+                --static-angle: 180deg;
+            }
+
+            .nav-bubble--trends {
+                --static-angle: 270deg;
+            }
         }
     </style>
 </head>
@@ -317,21 +347,28 @@
         })();
     </script>
     <!-- Check-in questionnaire modal -->
-    <div class="username-overlay" id="questionnaire-overlay" style="display:none;z-index:200;align-items:flex-start;padding:24px 0;overflow-y:auto;">
+    <div class="username-overlay" id="questionnaire-overlay"
+        style="display:none;z-index:200;align-items:flex-start;padding:24px 0;overflow-y:auto;">
         <div class="panel" style="width:min(520px,94vw);padding:32px 28px;text-align:left;margin:auto;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
                 <h2 style="margin:0;font-size:20px;">Check-In</h2>
-                <button onclick="dismissQuestionnaire()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 0 0 12px;" title="Close">&times;</button>
+                <button onclick="dismissQuestionnaire()"
+                    style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0 0 0 12px;"
+                    title="Close">&times;</button>
             </div>
-            <p style="margin:0 0 28px;color:var(--muted);font-size:14px;">Rate each area from 1 (very low) to 5 (great).</p>
+            <p style="margin:0 0 28px;color:var(--muted);font-size:14px;">Rate each area from 1 (very low) to 5 (great).
+            </p>
             <div id="q-questions-list"></div>
-            <p id="q-error" style="display:none;color:var(--danger);font-size:13px;margin:0 0 16px;">Please answer all questions before saving.</p>
+            <p id="q-error" style="display:none;color:var(--danger);font-size:13px;margin:0 0 16px;">Please answer all
+                questions before saving.</p>
             <button class="main-button full-width" onclick="submitQuestionnaire()">Save Check-In</button>
         </div>
     </div>
 
     <header class="top-bar">
-        <a href="index.html" style="text-decoration:none;"><div class="insite-logo">InSiteful Mind</div></a>
+        <a href="index.html" style="text-decoration:none;">
+            <div class="insite-logo">InSiteful Mind</div>
+        </a>
         <nav class="wrap row" aria-label="Quick links">
             <a href="journal.html">
                 <button type="button" class="main-button">Journal</button>
@@ -365,27 +402,65 @@
                     </div>
                 </div>
                 <a class="nav-bubble nav-bubble--journal" href="journal.html">Journal</a>
-                <a class="nav-bubble nav-bubble--checkin" href="#" onclick="event.preventDefault();openQuestionnaire()">Check-In</a>
+                <a class="nav-bubble nav-bubble--checkin" href="#"
+                    onclick="event.preventDefault();openQuestionnaire()">Check-In</a>
                 <a class="nav-bubble nav-bubble--words" href="three-word-reflection.html">Three-Word</a>
                 <a class="nav-bubble nav-bubble--trends" href="trends.html">Trends</a>
             </div>
         </section>
+        <div class="entry-form panel">
+            <h2>AI Prompt Example</h2>
+            <textarea id="prompt-content" placeholder="Prompt Gemini"></textarea>
+            <button class="main-button full-width" id="ai-btn" onclick="getInsight()">Submit</button>
+        </div>
+        <script>
+            function authHeaders() {
+                return {
+                    'Content-Type': 'application/json',
+                };
+            }
+
+            async function getInsight() {
+                const content = document.getElementById('prompt-content').value.trim();
+                if (!content) return;
+
+                const btn = document.getElementById('ai-btn');
+                btn.disabled = true;
+                btn.textContent = 'Thinking...';
+
+                try {
+                    const res = await fetch('/api/gemini', {
+                        method: 'POST',
+                        headers: authHeaders(),
+                        body: JSON.stringify({ content }),
+                    });
+                    if (res.ok) {
+                        const msg = await res.json();
+                        document.getElementById('prompt-content').value = msg.message;
+                    }
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Submit';
+                }
+
+            }
+        </script>
     </main>
     <script>
         const QUESTIONS = [
-            { id: 'mood',             label: 'How would you rate your overall mood today?' },
-            { id: 'sleep',            label: 'How well have you been sleeping?' },
-            { id: 'energy',           label: 'How is your energy level?' },
-            { id: 'calm',             label: 'How calm and relaxed do you feel?' },
-            { id: 'connection',       label: 'How connected do you feel to others?' },
-            { id: 'motivation',       label: 'How motivated do you feel?' },
-            { id: 'focus',            label: 'How well are you able to focus?' },
+            { id: 'mood', label: 'How would you rate your overall mood today?' },
+            { id: 'sleep', label: 'How well have you been sleeping?' },
+            { id: 'energy', label: 'How is your energy level?' },
+            { id: 'calm', label: 'How calm and relaxed do you feel?' },
+            { id: 'connection', label: 'How connected do you feel to others?' },
+            { id: 'motivation', label: 'How motivated do you feel?' },
+            { id: 'focus', label: 'How well are you able to focus?' },
             { id: 'responsibilities', label: 'How well are you managing your daily responsibilities?' },
-            { id: 'hope',             label: 'How hopeful do you feel about the future?' },
-            { id: 'anxiety_free',     label: 'How free from worry or anxiety do you feel?' },
-            { id: 'progress',         label: 'How satisfied are you with your recent progress?' },
-            { id: 'physical',         label: 'How well are you taking care of your physical health?' },
-            { id: 'grounded',         label: 'How present and grounded do you feel?' },
+            { id: 'hope', label: 'How hopeful do you feel about the future?' },
+            { id: 'anxiety_free', label: 'How free from worry or anxiety do you feel?' },
+            { id: 'progress', label: 'How satisfied are you with your recent progress?' },
+            { id: 'physical', label: 'How well are you taking care of your physical health?' },
+            { id: 'grounded', label: 'How present and grounded do you feel?' },
         ];
 
         const SCALE_LABELS = { 1: 'Very Low', 2: 'Low', 3: 'Moderate', 4: 'Good', 5: 'Great' };
@@ -401,7 +476,7 @@
                         ${i + 1}. ${q.label}
                     </p>
                     <div style="display:flex;gap:8px;">
-                        ${[1,2,3,4,5].map(n => `
+                        ${[1, 2, 3, 4, 5].map(n => `
                             <button
                                 id="q-btn-${q.id}-${n}"
                                 onclick="selectResponse('${q.id}', ${n})"
@@ -419,7 +494,7 @@
 
         function selectResponse(questionId, value) {
             qResponses[questionId] = value;
-            [1,2,3,4,5].forEach(n => {
+            [1, 2, 3, 4, 5].forEach(n => {
                 const btn = document.getElementById(`q-btn-${questionId}-${n}`);
                 if (n === value) {
                     btn.style.background = 'linear-gradient(135deg,var(--primary),var(--primary-dark))';
