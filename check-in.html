@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Check-In</title>
+    <script src="theme-early.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js"></script>
 </head>
@@ -13,12 +14,16 @@
 <body>
     <header class="top-bar">
         <a href="index.html" style="text-decoration:none;"><div class="insite-logo"> InSiteful Mind </div></a>
-        <nav class="wrap row" aria-label="Primary navigation">
-            <a href="journal.html"><button class="main-button"> Journal </button></a>
-            <a href="check-in.html"><button class="main-button"> Check-In </button></a>
-            <a href="three-word-reflection.html"><button class="main-button"> Three-Word </button></a>
-            <a href="trends.html"><button class="main-button"> Trends </button></a>
-        </nav>
+        <div class="top-bar-actions">
+            <!-- Navigation buttons -->
+            <nav class="wrap row" aria-label="Primary navigation">
+                <a href="journal.html"><button class="main-button"> Journal </button></a>
+                <a href="check-in.html"><button class="main-button"> Check-In </button></a>
+                <a href="three-word-reflection.html"><button class="main-button"> Three-Word </button></a>
+                <a href="trends.html"><button class="main-button"> Trends </button></a>
+            </nav>
+            <a class="settings-gear" href="settings.html" title="Settings" aria-label="Open settings">⚙</a>
+        </div>
     </header>
 
     <main class="container container-top">

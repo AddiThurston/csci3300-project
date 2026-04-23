@@ -8,6 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind</title>
+    <script src="theme-early.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js"></script>
@@ -32,7 +33,9 @@
                 (async () => {
                     const sessionData = await globalThis.getSession?.();
                     if (sessionData?.user) {
-                        globalThis.location.href = "index.html";
+                        const returnUrl = sessionStorage.getItem("returnUrl");
+                        sessionStorage.removeItem("returnUrl");
+                        globalThis.location.href = returnUrl || "index.html";
                     }
                 })();
 
@@ -66,7 +69,9 @@
                         sessionStorage.setItem("credential", response.credential);
                         globalThis.signInWithGoogleCredential(response.credential)
                             .then(() => {
-                                globalThis.location.href = "index.html";
+                                const returnUrl = sessionStorage.getItem("returnUrl");
+                                sessionStorage.removeItem("returnUrl");
+                                globalThis.location.href = returnUrl || "index.html";
                             })
                             .catch((error) => {
                                 console.error("Backend Google sign-in failed.", error);

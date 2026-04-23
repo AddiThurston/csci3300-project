@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>InSiteful Mind - Three-Word Reflection</title>
+    <script src="theme-early.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js"></script>
 </head>
@@ -35,12 +36,15 @@
     </div>
     <header class="top-bar">
         <a href="index.html" style="text-decoration:none;"><div class="insite-logo"> InSiteful Mind </div></a>
-        <nav class="wrap row">
-            <a href="journal.html"><button class="main-button"> Journal </button></a>
-            <button class="main-button" onclick="openQuestionnaire()"> Check-In </button>
-            <a href="three-word-reflection.html"><button class="main-button"> Three-Word </button></a>
-            <a href="trends.html"><button class="main-button"> Trends </button></a>
-        </nav>
+        <div class="top-bar-actions">
+            <nav class="wrap row">
+                <a href="journal.html"><button class="main-button"> Journal </button></a>
+                <button class="main-button" onclick="openQuestionnaire()"> Check-In </button>
+                <a href="three-word-reflection.html"><button class="main-button"> Three-Word </button></a>
+                <a href="trends.html"><button class="main-button"> Trends </button></a>
+            </nav>
+            <a class="settings-gear" href="settings.html" title="Settings" aria-label="Open settings">⚙</a>
+        </div>
     </header>
 
     <main class="container container-top mood-page">
@@ -526,7 +530,7 @@
                 <div style="margin-bottom:24px;">
                     <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:var(--text);">${i + 1}. ${q.label}</p>
                     <div style="display:flex;gap:8px;">
-                        ${[1,2,3,4,5].map(n => `<button id="q-btn-${q.id}-${n}" onclick="selectResponse('${q.id}', ${n})" style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);background:rgba(8,14,31,.45);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;" onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'" onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'">${n}<br><span style="font-size:10px;font-weight:400;">${SCALE_LABELS[n]}</span></button>`).join("")}
+                        ${[1,2,3,4,5].map(n => `<button id="q-btn-${q.id}-${n}" onclick="selectResponse('${q.id}', ${n})" style="flex:1;padding:10px 0;border-radius:10px;border:1.5px solid var(--line);background:var(--control-bg-soft);color:var(--control-text);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;" onmouseover="if(!this.dataset.selected)this.style.borderColor='var(--primary)'" onmouseout="if(!this.dataset.selected)this.style.borderColor='var(--line)'">${n}<br><span style="font-size:10px;font-weight:400;">${SCALE_LABELS[n]}</span></button>`).join("")}
                     </div>
                 </div>
             `).join("");
@@ -536,7 +540,7 @@
             [1,2,3,4,5].forEach(n => {
                 const btn = document.getElementById(`q-btn-${qid}-${n}`);
                 if (n === val) { btn.style.background="linear-gradient(135deg,var(--primary),var(--primary-dark))"; btn.style.borderColor="var(--primary)"; btn.style.color="#fff"; btn.dataset.selected="1"; }
-                else { btn.style.background="rgba(8,14,31,.45)"; btn.style.borderColor="var(--line)"; btn.style.color="var(--muted)"; delete btn.dataset.selected; }
+                else { btn.style.background="var(--control-bg-soft)"; btn.style.borderColor="var(--line)"; btn.style.color="var(--control-text)"; delete btn.dataset.selected; }
             });
             document.getElementById("q-error").style.display="none";
         }
