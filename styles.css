@@ -25,6 +25,7 @@
     --control-text: var(--text);
     --control-placeholder: var(--muted);
     --date-color-scheme: dark;
+    --bg-accent-corner: #101f47;
 }
 
 html {
@@ -40,7 +41,7 @@ body {
         radial-gradient(circle at 15% 20%, rgba(95, 140, 255, 0.22), transparent 35%),
         radial-gradient(circle at 80% 10%, rgba(103, 240, 255, 0.16), transparent 32%),
         radial-gradient(circle at 70% 90%, rgba(128, 94, 255, 0.2), transparent 35%),
-        linear-gradient(160deg, var(--bg-1), var(--bg-2) 60%, #101f47);
+        linear-gradient(160deg, var(--bg-1), var(--bg-2) 60%, var(--bg-accent-corner));
     background-attachment: fixed;
     min-height: 100vh;
 }
@@ -65,11 +66,12 @@ body {
     --control-text: #1b2948;
     --control-placeholder: #5a6d96;
     --date-color-scheme: light;
+    --bg-accent-corner: #dbe7ff;
     background:
         radial-gradient(circle at 18% 18%, rgba(95, 140, 255, 0.18), transparent 36%),
         radial-gradient(circle at 78% 6%, rgba(103, 240, 255, 0.14), transparent 30%),
         radial-gradient(circle at 75% 92%, rgba(160, 124, 255, 0.16), transparent 34%),
-        linear-gradient(160deg, var(--bg-1), var(--bg-2) 60%, #dfe9fc);
+        linear-gradient(160deg, var(--bg-1), var(--bg-2) 60%, var(--bg-accent-corner));
 }
 
 :root[data-theme="dark"] {
@@ -91,6 +93,7 @@ body {
     --control-text: #e9f0ff;
     --control-placeholder: #9cb0d2;
     --date-color-scheme: dark;
+    --bg-accent-corner: #101f47;
 }
 
 :root[data-theme="meadow"] {
@@ -113,10 +116,11 @@ body {
     --control-text: #173929;
     --control-placeholder: #4f7e67;
     --date-color-scheme: light;
+    --bg-accent-corner: #bfe6c9;
     background:
         linear-gradient(rgba(237, 250, 240, 0.78), rgba(231, 247, 235, 0.84)),
         var(--theme-image, url("assets/theme-meadow-placeholder.jpg")),
-        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+        linear-gradient(160deg, var(--bg-1), var(--bg-2) 60%, var(--bg-accent-corner));
     background-size: cover;
     background-position: center;
 }
@@ -140,10 +144,11 @@ body {
     --control-text: #e7fff7;
     --control-placeholder: #9ec7bb;
     --date-color-scheme: dark;
+    --bg-accent-corner: #1f4a3b;
     background:
         linear-gradient(rgba(4, 12, 9, 0.7), rgba(4, 12, 9, 0.75)),
         var(--theme-image, url("assets/theme-forest-placeholder.jpg")),
-        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+        linear-gradient(160deg, var(--bg-1), var(--bg-2) 60%, var(--bg-accent-corner));
     background-size: cover;
     background-position: center;
 }
@@ -167,6 +172,7 @@ body {
     --control-text: #f5ebff;
     --control-placeholder: #ccb2ec;
     --date-color-scheme: dark;
+    --bg-accent-corner: #5d2c83;
 }
 
 body::before {
@@ -310,6 +316,13 @@ header.top-bar {
     align-content: center;
     justify-items: center;
     width: min(880px, 100%);
+    margin-inline: auto;
+}
+
+.login-page.container {
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
 }
 
 .login-logo {
@@ -353,7 +366,7 @@ header.top-bar {
     margin: 0 0 10px;
     font-size: 28px;
     font-weight: 700;
-    color: #f6f9ff;
+    color: var(--text);
 }
 
 .login-subtitle {
@@ -1083,7 +1096,7 @@ header.top-bar {
     padding: 16px 18px;
     border-radius: 14px;
     border: 1px solid var(--line);
-    background: rgba(8, 14, 31, 0.55);
+    background: var(--control-bg-soft);
 }
 
 .ai-response-placeholder,
@@ -1099,7 +1112,7 @@ header.top-bar {
 }
 
 .ai-response-text {
-    color: #d7e3ff;
+    color: var(--text);
     white-space: pre-wrap;
 }
 
@@ -1118,19 +1131,18 @@ header.top-bar {
     gap: 12px;
     min-width: 72px;
     padding: 18px 16px 18px 18px;
-    border: 1px solid rgba(103, 240, 255, 0.35);
+    border: 1px solid var(--line);
     border-right: none;
     border-radius: 18px 0 0 18px;
-    background: linear-gradient(180deg, rgba(14, 24, 53, 0.96), rgba(34, 76, 168, 0.92));
+    background: linear-gradient(180deg, var(--primary), var(--primary-dark));
     color: #ffffff;
-    box-shadow: 0 18px 32px rgba(4, 10, 28, 0.42);
+    box-shadow: 0 14px 28px rgba(4, 10, 28, 0.34);
     cursor: pointer;
     transition: transform 0.22s ease, box-shadow 0.22s ease, right 0.28s ease;
 }
 
 .gemini-tab:hover {
-    transform: translateX(-3px);
-    box-shadow: 0 20px 34px rgba(4, 10, 28, 0.5);
+    box-shadow: 0 16px 30px rgba(4, 10, 28, 0.4);
 }
 
 .gemini-tab-label {
@@ -1202,9 +1214,9 @@ header.top-bar {
 }
 
 .gemini-close {
-    border: 1px solid transparent;
+    border: 1px solid var(--line);
     border-radius: 10px;
-    background: rgba(8, 14, 31, 0.5);
+    background: var(--control-bg);
     color: var(--muted);
     width: 36px;
     height: 36px;
@@ -1215,9 +1227,9 @@ header.top-bar {
 }
 
 .gemini-close:hover {
-    color: #ffffff;
-    background: rgba(95, 140, 255, 0.18);
-    border-color: rgba(95, 140, 255, 0.28);
+    color: var(--text);
+    background: var(--control-bg-soft);
+    border-color: var(--primary);
 }
 
 body.gemini-open .gemini-backdrop {
@@ -1520,13 +1532,13 @@ mark {
         right: 16px;
         bottom: 18px;
         min-width: 0;
-        border-right: 1px solid rgba(103, 240, 255, 0.35);
+        border-right: 1px solid var(--line);
         border-radius: 999px;
         padding: 12px 16px;
     }
 
     .gemini-tab:hover {
-        transform: translateY(-2px);
+        transform: none;
     }
 
     .gemini-tab-label {

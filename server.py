@@ -35,6 +35,9 @@ redis = Redis(
 
 client = None
 MODEL_NAME = "gemini-2.5-flash-lite"
+AI_DISCLAIMER = (
+    "I am not a licensed mental health professional, and this AI-generated guidance can be inaccurate or incomplete."
+)
 
 
 def get_ai_client():
@@ -344,11 +347,15 @@ def build_ai_prompt(user_message, journal_entries, checkins, questionnaires):
     return "\n\n".join(
         [
             (
-                "You are a supportive mental health assistant for a student wellness journal. "
+                "You are a supportive assistant helping the user understand emotional trends over time. "
+                "You must use all provided context together: the user's prompt, journal entries (date, title, content), "
+                "three-word check-ins, and questionnaire responses. "
                 "Answer with empathy, keep the response concise, ground your answer in the provided history, "
-                "and avoid making clinical diagnoses. Pay close attention to dates and timestamps so you can "
-                "weigh recent entries more heavily and identify changes over time. Use that timing information "
-                "to improve the analysis, but do not explicitly mention exact dates unless the user's question requires it."
+                "and avoid making clinical diagnoses. Pay close attention to chronology so you can weigh recent "
+                "entries more heavily and identify changes over time. Use that timing information to improve analysis, "
+                "but do not explicitly mention exact dates unless the user's question requires them. "
+                "Always include this exact safety sentence at the end of your response: "
+                f"\"{AI_DISCLAIMER}\""
             ),
             f"User Question:\n{user_message}",
             f"Date Context:\n{build_date_context(journal_entries, checkins, questionnaires)}",
@@ -357,6 +364,15 @@ def build_ai_prompt(user_message, journal_entries, checkins, questionnaires):
             f"Questionnaire Responses:\n{format_questionnaire_context(questionnaires)}",
         ]
     )
+
+
+def ensure_ai_disclaimer(reply_text):
+    base = str(reply_text or "").strip()
+    if not base:
+        return AI_DISCLAIMER
+    if AI_DISCLAIMER.lower() in base.lower():
+        return base
+    return f"{base}\n\n{AI_DISCLAIMER}"
 
 
 # Serve HTML files
@@ -591,23 +607,10 @@ def get_ai_insight():
     if not message:
         return jsonify({"error": "message is required"}), 400
 
-    supplied_entries = body.get("journalEntries")
-    if isinstance(supplied_entries, list):
-        journal_entries = normalize_journal_entries(supplied_entries)
-    else:
-        journal_entries = load_user_records("journal", username)
-
-    supplied_checkins = body.get("checkins")
-    if isinstance(supplied_checkins, list):
-        checkins = normalize_checkins(supplied_checkins)
-    else:
-        checkins = load_user_records("checkin", username)
-
-    supplied_questionnaires = body.get("questionnaires")
-    if isinstance(supplied_questionnaires, list):
-        questionnaires = normalize_questionnaire_entries(supplied_questionnaires)
-    else:
-        questionnaires = load_user_records("questionnaire", username)
+    # Always use server-side history so trend analysis includes complete user context.
+    journal_entries = load_user_records("journal", username)
+    checkins = load_user_records("checkin", username)
+    questionnaires = load_user_records("questionnaire", username)
     prompt = build_ai_prompt(message, journal_entries, checkins, questionnaires)
 
     ai_client = get_ai_client()
@@ -623,7 +626,8 @@ def get_ai_insight():
     if not reply:
         return jsonify({"error": "Chat service unavailable"}), 502
 
-    return jsonify({"reply": reply, "message": reply})
+    final_reply = ensure_ai_disclaimer(reply)
+    return jsonify({"reply": final_reply, "message": final_reply})
 
 
 # POST /api/trends/share — grant a specific email access to owner's trends

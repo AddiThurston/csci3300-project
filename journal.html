@@ -119,23 +119,11 @@
     
 
     <script type="module">
-        import { getEncryptionKey, encryptText, decryptText } from './encryption.js';
-
         const sessionData = await globalThis.requireAuth();
         if (!sessionData || !sessionData.user) {
             throw new Error("Authentication required");
         }
-        let currentUsername = (sessionData.user.email || sessionData.user.sub || "").trim();
-        let encryptionKey = null;
         let allEntries = [];
-
-        // Derives the encryption key from the user's Google account ID (or username).
-        // Must be called before saving or loading entries.
-        async function initEncryption() {
-            encryptionKey = await getEncryptionKey();
-        }
-
-        await initEncryption();
         await loadEntries();
 
         function authHeaders() {
@@ -223,12 +211,7 @@
                     return;
                 }
                 const raw = await res.json();
-                // Decrypt each entry's title and content before storing in memory
-                allEntries = await Promise.all(raw.map(async entry => ({
-                    ...entry,
-                    title: encryptionKey ? await decryptText(encryptionKey, entry.title) : entry.title,
-                    content: encryptionKey ? await decryptText(encryptionKey, entry.content) : entry.content,
-                })));
+                allEntries = raw;
                 filterEntries();
             } catch {
                 document.getElementById('entries-list').innerHTML =
@@ -249,9 +232,8 @@
             btn.textContent = 'Saving...';
 
             try {
-                // Encrypt title and content in the browser before sending to the server
-                const title = encryptionKey ? await encryptText(encryptionKey, rawTitle || 'Untitled') : rawTitle;
-                const content = encryptionKey ? await encryptText(encryptionKey, rawContent) : rawContent;
+                const title = rawTitle || 'Untitled';
+                const content = rawContent;
 
                 const res = await fetch('/api/entries', {
                     method: 'POST',
