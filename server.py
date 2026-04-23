@@ -171,7 +171,7 @@ def normalize_checkins(entries):
     return normalized[:12]
 
 
-def summarize_checkins(entries):
+def format_checkins_context(entries):
     entries = normalize_checkins(entries)
     if not entries:
         return "No check-ins available."
@@ -193,25 +193,31 @@ def summarize_checkins(entries):
     else:
         trend_label = "Stable"
 
-    words = []
+    all_words = []
     for entry in chronological:
         raw_words = entry.get("words")
         if isinstance(raw_words, list):
-            words.extend(str(word).strip().lower() for word in raw_words if str(word).strip())
+            all_words.extend(str(word).strip().lower() for word in raw_words if str(word).strip())
 
-    common_words = Counter(words).most_common(5)
+    common_words = Counter(all_words).most_common(5)
     word_summary = ", ".join(f"{word} ({count})" for word, count in common_words) if common_words else "None"
     latest = chronological[-1]
     latest_label = str(latest.get("moodLabel") or "Unknown").strip() or "Unknown"
 
-    return "\n".join(
-        [
-            f"Mood trend: {trend_label}",
-            f"Average mood score: {sum(scores) / len(scores):.1f}",
-            f"Latest mood: {latest_label} ({scores[-1]}) on {format_timestamp(latest.get('timestamp'))}",
-            f"Common check-in words: {word_summary}",
-        ]
-    )
+    lines = [
+        f"Mood trend: {trend_label}",
+        f"Average mood score: {sum(scores) / len(scores):.1f}",
+        f"Latest mood: {latest_label} ({scores[-1]}) on {format_timestamp(latest.get('timestamp'))}",
+        f"Common check-in words: {word_summary}",
+        "Individual check-ins (newest first):",
+    ]
+    for entry in entries:
+        words_str = ", ".join(entry["words"]) if entry["words"] else "no words"
+        lines.append(
+            f"- [{format_timestamp(entry['timestamp'])}] "
+            f"{entry['moodLabel']} ({entry['moodScore']}/100) — {words_str}"
+        )
+    return "\n".join(lines)
 
 
 QUESTIONNAIRE_QUESTIONS = (
@@ -347,7 +353,7 @@ def build_ai_prompt(user_message, journal_entries, checkins, questionnaires):
             f"User Question:\n{user_message}",
             f"Date Context:\n{build_date_context(journal_entries, checkins, questionnaires)}",
             f"Journal Entries:\n{format_journal_context(journal_entries)}",
-            f"Check-In Trends:\n{summarize_checkins(checkins)}",
+            f"Check-In History:\n{format_checkins_context(checkins)}",
             f"Questionnaire Responses:\n{format_questionnaire_context(questionnaires)}",
         ]
     )

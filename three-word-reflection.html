@@ -44,66 +44,63 @@
     </header>
 
     <main class="container container-top mood-page">
-        <! While this works fine, I think it would be better for this to be a section instead of a div since it is a distinct part of the page>
-        <div class="checkin-wrapper">
-            <section class="mood-slider-block panel">
-                <div class="mood-slider-header">
-                    <span class="mood-slider-label">Current Mood</span>
-                </div>
-                <div class="mood-scale-wrap">
-                    <span class="mood-current-value mood-indicator" id="mood-value">Okay</span>
-                    <input
-                        class="mood-slider"
-                        id="mood-slider"
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value="50"
-                        aria-label="Mood from abysmal to exceptional"
-                    />
-                    <div class="mood-scale-labels" aria-hidden="true">
-                        <span>Abysmal</span>
-                        <span>Rough</span>
-                        <span>Low</span>
-                        <span>Okay</span>
-                        <span>Good</span>
-                        <span>Great</span>
-                        <span>Exceptional</span>
+        <div class="checkin-page-layout">
+            <div class="checkin-wrapper">
+                <section class="mood-slider-block panel">
+                    <div class="mood-slider-header">
+                        <span class="mood-slider-label">Current Mood</span>
                     </div>
+                    <div class="mood-scale-wrap">
+                        <span class="mood-current-value mood-indicator" id="mood-value">Okay</span>
+                        <input
+                            class="mood-slider"
+                            id="mood-slider"
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="50"
+                            aria-label="Mood from abysmal to exceptional"
+                        />
+                        <div class="mood-scale-labels" aria-hidden="true">
+                            <span>Abysmal</span>
+                            <span>Rough</span>
+                            <span>Low</span>
+                            <span>Okay</span>
+                            <span>Good</span>
+                            <span>Great</span>
+                            <span>Exceptional</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="words-card panel">
+                    <h2>Choose Up to 3 Words</h2>
+                    <div class="word-grid" id="word-grid"></div>
+                </section>
+
+                <section class="selected-display panel">
+                    <h3>Your Words</h3>
+                    <div class="selected-pills" id="selected-pills">
+                        <span class="slot-empty">No words selected yet</span>
+                    </div>
+                    <p class="slot-counter" id="slot-counter">0 / 3 selected</p>
+                </section>
+
+                <div class="submit-row">
+                    <button class="main-button full-width" id="submit-btn" onclick="submitCheckin()" disabled>
+                        Save Reflection
+                    </button>
                 </div>
-            </section>
-
-            <section class="words-card panel">
-                <h2>Choose Up to 3 Words</h2>
-
-                <div class="word-grid" id="word-grid"></div>
-            </section>
-
-            <section class="selected-display panel">
-                <h3>Your Words</h3>
-                <div class="selected-pills" id="selected-pills">
-                    <span class="slot-empty">No words selected yet</span>
-                </div>
-                <p class="slot-counter" id="slot-counter">0 / 3 selected</p>
-            </section>
-
-            <div class="submit-row">
-                <button class="main-button" id="submit-btn" onclick="submitCheckin()" disabled>
-                    Save Reflection
-                </button>
-                <button class="skip-link" id="view-history-btn" type="button" onclick="viewPastEntries()">
-                    View Past Entries
-                </button>
             </div>
 
-            <section class="history-card panel" id="history-card">
-                <div class="history-header">
-                    <h3>Previous Reflections</h3>
-                    <p id="history-meta"></p>
+            <aside class="checkin-history-panel panel">
+                <h2>Past Check-Ins</h2>
+                <p id="checkin-history-meta" class="panel-subtitle"></p>
+                <div id="checkin-history-list">
+                    <p class="empty-state">Loading check-ins...</p>
                 </div>
-                <div id="history-list"></div>
-            </section>
+            </aside>
         </div>
     </main>
 
@@ -173,12 +170,6 @@
         const moodPage = document.querySelector(".mood-page");
         const moodSlider = document.getElementById("mood-slider");
         const moodValue = document.getElementById("mood-value");
-        const moodScaleLabels = Array.from(document.querySelectorAll(".mood-scale-labels span"));
-        const historyCard = document.getElementById("history-card");
-        const historyList = document.getElementById("history-list");
-        const historyMeta = document.getElementById("history-meta");
-        const historyBtn = document.getElementById("view-history-btn");
-        let historyVisible = false;
         let cachedCheckinEntries = [];
 
         function authHeaders() {
@@ -259,9 +250,7 @@
             const percent = (score - min) / (max - min);
 
             const sliderWidth = moodSlider.offsetWidth;
-
             const thumbWidth = 22;
-
             const offset = percent * (sliderWidth - thumbWidth) + thumbWidth / 2;
 
             moodValue.style.left = `${offset}px`;
@@ -277,10 +266,6 @@
                 });
         }
 
-
-        // kysen code review: submitCheckin manages button UI state, builds the payload, makes the API call,
-        // and calls showSuccess. Consider extracting buildCheckinPayload() and letting
-        // submitCheckin focus only on the fetch + error handling.
         async function submitCheckin() {
             if (selectedWords.length === 0) return;
             const btn = document.getElementById("submit-btn");
@@ -304,8 +289,7 @@
                 });
                 if (!response.ok) throw new Error("Failed to save reflection");
                 hideSelectionMenu();
-                await viewPastEntries({ forceOpen: true });
-                historyCard.scrollIntoView({ behavior: "smooth", block: "start" });
+                await loadCheckinHistory();
             } catch {
                 btn.disabled = false;
                 btn.textContent = "Save Reflection";
@@ -314,8 +298,8 @@
         }
         globalThis.submitCheckin = submitCheckin;
 
-        async function fetchCheckinHistory(limit = 10) {
-            const res = await fetch(`/api/checkin?limit=${limit}`, {
+        async function fetchAllCheckins() {
+            const res = await fetch(`/api/checkin`, {
                 method: "GET",
                 headers: authHeaders(),
             });
@@ -324,79 +308,63 @@
                 throw new Error("Authentication required");
             }
             if (!res.ok) {
-                throw new Error("Failed to load history");
+                throw new Error("Failed to load check-ins");
             }
-
             const data = await res.json();
-            const entries = Array.isArray(data.entries) ? data.entries : [];
+            const entries = Array.isArray(data) ? data : [];
             cachedCheckinEntries = entries;
-            return {
-                entries,
-                total: Number(data.total) || entries.length,
-                hasMore: Boolean(data.hasMore),
-            };
+            return entries;
         }
 
-        async function viewPastEntries(options = {}) {
-            const forceOpen = Boolean(options.forceOpen);
-
-            if (historyVisible && !forceOpen) {
-                historyCard.style.display = "none";
-                historyBtn.textContent = "View Past Entries";
-                historyVisible = false;
-                return;
-            }
-
-            historyCard.style.display = "block";
-            historyList.innerHTML = `<p class="history-status">Loading past entries...</p>`;
-            historyMeta.textContent = "";
-            historyBtn.disabled = true;
+        async function loadCheckinHistory() {
+            const list = document.getElementById("checkin-history-list");
+            const meta = document.getElementById("checkin-history-meta");
+            list.innerHTML = `<p class="empty-state">Loading check-ins...</p>`;
 
             try {
-                const { entries, total, hasMore } = await fetchCheckinHistory(10);
-
-                historyMeta.textContent = `${entries.length} shown of ${total} total`;
+                const entries = await fetchAllCheckins();
+                meta.textContent = entries.length ? `${entries.length} saved` : "";
                 if (entries.length) {
-                    historyList.innerHTML = entries.map((entry) => {
-                        const words = Array.isArray(entry.words) ? entry.words.map((word) =>
-                            `<span class="success-word-pill">${escapeHtml(word)}</span>`
-                        ).join("") : "";
+                    list.innerHTML = entries.map((entry) => {
+                        const words = Array.isArray(entry.words)
+                            ? entry.words.map((word) => `<span class="success-word-pill">${escapeHtml(word)}</span>`).join("")
+                            : "";
                         return `
                             <article class="history-item">
                                 <div class="history-row">
-                                    <strong>${escapeHtml(entry.moodLabel || "Mood")}</strong>
-                                    <span class="history-date">${escapeHtml(formatDate(entry.timestamp))}</span>
+                                    <strong>${escapeHtml(entry.moodLabel || "Mood")} <span style="font-weight:400;color:var(--muted);font-size:12px;">${entry.moodScore}/100</span></strong>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span class="history-date">${escapeHtml(formatDate(entry.timestamp))}</span>
+                                        <button class="delete-btn" onclick="deleteCheckin('${escapeHtml(entry.id)}')" title="Delete">&#x2715;</button>
+                                    </div>
                                 </div>
-                                <div class="success-words">${words}</div>
+                                <div class="success-words" style="justify-content:flex-start;margin-top:8px;margin-bottom:0;">${words}</div>
                             </article>
                         `;
                     }).join("");
                 } else {
-                    historyList.innerHTML = `<p class="history-status">No past entries yet.</p>`;
+                    list.innerHTML = `<p class="empty-state">No check-ins yet. Save your first reflection!</p>`;
                 }
-
-                if (hasMore) {
-                    historyList.insertAdjacentHTML(
-                        "beforeend",
-                        `<p class="history-status">Showing most recent 10 entries.</p>`
-                    );
-                }
-                historyBtn.textContent = "Hide Past Entries";
-                historyVisible = true;
             } catch {
-                historyList.innerHTML = `<p class="history-status">Could not load past entries right now.</p>`;
-            } finally {
-                historyBtn.disabled = false;
+                list.innerHTML = `<p class="empty-state">Could not load check-ins right now.</p>`;
             }
         }
-        globalThis.viewPastEntries = viewPastEntries;
+
+        async function deleteCheckin(id) {
+            try {
+                await fetch(`/api/checkin/${id}`, { method: "DELETE", headers: authHeaders() });
+                cachedCheckinEntries = cachedCheckinEntries.filter((e) => e.id !== id);
+                await loadCheckinHistory();
+            } catch {
+                // silently fail
+            }
+        }
 
         async function getCheckinsForAI() {
             let entries = cachedCheckinEntries;
             if (!entries.length) {
                 try {
-                    const history = await fetchCheckinHistory(10);
-                    entries = history.entries;
+                    entries = await fetchAllCheckins();
                 } catch {
                     entries = [];
                 }
@@ -527,9 +495,11 @@
         updateMoodLabel();
         setActiveCategory(sliderCategory(50));
         renderSelected();
+        await loadCheckinHistory();
         globalThis.askReflectionAI = askReflectionAI;
         globalThis.toggleGeminiPanel = toggleGeminiPanel;
         globalThis.closeGeminiPanel = closeGeminiPanel;
+        globalThis.deleteCheckin = deleteCheckin;
     </script>
     <script>
         const QUESTIONS = [

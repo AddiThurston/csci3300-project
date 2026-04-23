@@ -797,6 +797,23 @@ header.top-bar {
     }
 }
 
+.checkin-page-layout {
+    width: min(1100px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.checkin-history-panel {
+    padding: 24px;
+}
+
+.checkin-history-panel h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+}
+
 .journal-layout {
     display: grid;
     grid-template-columns: 1fr 2fr;
@@ -1201,6 +1218,10 @@ mark {
     }
 
     .questionnaire-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .checkin-page-layout {
         grid-template-columns: 1fr;
     }
 

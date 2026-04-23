@@ -162,7 +162,7 @@ class ChatAgentContractTests(unittest.TestCase):
         self.assertIn("User Question:", prompt)
         self.assertIn("Date Context:", prompt)
         self.assertIn("Journal Entries:", prompt)
-        self.assertIn("Check-In Trends:", prompt)
+        self.assertIn("Check-In History:", prompt)
         self.assertIn("Questionnaire Responses:", prompt)
         self.assertIn("What patterns do you notice this week?", prompt)
         self.assertIn("I felt overwhelmed studying for exams.", prompt)
