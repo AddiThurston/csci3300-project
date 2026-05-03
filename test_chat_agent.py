@@ -149,10 +149,12 @@ class ChatAgentContractTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.get_json()["reply"],
+        reply = response.get_json()["reply"]
+        self.assertIn(
             "Your recent check-ins are improving, and calm is becoming more common.",
+            reply,
         )
+        self.assertIn(server.AI_DISCLAIMER, reply)
 
         call = ai_client.models.generate_content.call_args
         self.assertIsNotNone(call)
@@ -212,28 +214,30 @@ class ChatAgentContractTests(unittest.TestCase):
         self.assertNotIn("private", prompt)
 
     def test_accepts_supplied_checkin_and_questionnaire_drafts(self):
+        """Gemini loads check-ins and questionnaires from server-side storage only."""
+        self._checkin("draft-c1", 28, "Low", ["anxious", "tired"], 4_000)
+        self._questionnaire(
+            "draft-q1",
+            {
+                "mood": 2,
+                "sleep": 1,
+                "energy": 2,
+                "focus": 2,
+                "calm": 3,
+                "connection": 3,
+                "motivation": 3,
+                "responsibilities": 3,
+                "hope": 3,
+                "anxiety_free": 3,
+                "progress": 3,
+                "physical": 3,
+                "grounded": 3,
+            },
+            5_000,
+        )
+
         ai_client = MagicMock()
         ai_client.models.generate_content.return_value = MagicMock(text="Draft context included.")
-
-        supplied_checkins = [
-            {
-                "words": ["anxious", "tired"],
-                "moodScore": 28,
-                "moodLabel": "Low",
-                "timestamp": 4_000,
-            }
-        ]
-        supplied_questionnaires = [
-            {
-                "responses": {
-                    "mood": 2,
-                    "sleep": 1,
-                    "energy": 2,
-                    "focus": 2,
-                },
-                "timestamp": 5_000,
-            }
-        ]
 
         with patch.object(server, "client", ai_client, create=True), patch.object(
             server, "MODEL_NAME", "gemini-2.5-flash", create=True
@@ -243,8 +247,6 @@ class ChatAgentContractTests(unittest.TestCase):
                 data=json.dumps(
                     {
                         "message": "What stands out in the draft answers I have right now?",
-                        "checkins": supplied_checkins,
-                        "questionnaires": supplied_questionnaires,
                     }
                 ),
                 headers=self.headers,
