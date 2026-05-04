@@ -8,9 +8,11 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from google import genai
+from google.genai import types
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory, session
+import logging
 from upstash_redis import Redis
 
 load_dotenv() # load the environment variables from the .env file
@@ -342,20 +344,22 @@ def build_date_context(journal_entries, checkins, questionnaires):
     return "\n".join(lines)
 
 
+SYSTEM_INSTRUCTION = (
+    "You are a supportive assistant helping the user understand emotional trends over time. "
+    "You must use all provided context together: the user's prompt, journal entries (date, title, content), "
+    "three-word check-ins, and questionnaire responses. "
+    "Answer with empathy, keep the response concise, ground your answer in the provided history, "
+    "and avoid making clinical diagnoses. Pay close attention to chronology so you can weigh recent "
+    "entries more heavily and identify changes over time. Use that timing information to improve analysis, "
+    "but do not explicitly mention exact dates unless the user's question requires them. "
+    "Always include this exact safety sentence at the end of your response: "
+    f"\"{AI_DISCLAIMER}\""
+)
+
+
 def build_ai_prompt(user_message, journal_entries, checkins, questionnaires):
-    return "\n\n".join(
+    context = "\n\n".join(
         [
-            (
-                "You are a supportive assistant helping the user understand emotional trends over time. "
-                "You must use all provided context together: the user's prompt, journal entries (date, title, content), "
-                "three-word check-ins, and questionnaire responses. "
-                "Answer with empathy, keep the response concise, ground your answer in the provided history, "
-                "and avoid making clinical diagnoses. Pay close attention to chronology so you can weigh recent "
-                "entries more heavily and identify changes over time. Use that timing information to improve analysis, "
-                "but do not explicitly mention exact dates unless the user's question requires them. "
-                "Always include this exact safety sentence at the end of your response: "
-                f"\"{AI_DISCLAIMER}\""
-            ),
             f"User Question:\n{user_message}",
             f"Date Context:\n{build_date_context(journal_entries, checkins, questionnaires)}",
             f"Journal Entries:\n{format_journal_context(journal_entries)}",
@@ -363,6 +367,7 @@ def build_ai_prompt(user_message, journal_entries, checkins, questionnaires):
             f"Questionnaire Responses:\n{format_questionnaire_context(questionnaires)}",
         ]
     )
+    return context
 
 
 def ensure_ai_disclaimer(reply_text):
@@ -617,12 +622,21 @@ def get_ai_insight():
         return jsonify({"error": "Chat service unavailable"}), 502
 
     try:
-        ai_output = ai_client.models.generate_content(model=MODEL_NAME, contents=prompt)
-    except Exception:
+        ai_output = ai_client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_INSTRUCTION,
+                temperature=0.7,
+            ),
+        )
+    except Exception as e:
+        logging.exception("Gemini generate_content failed: %s", e)
         return jsonify({"error": "Chat service unavailable"}), 502
 
     reply = str(getattr(ai_output, "text", "") or "").strip()
     if not reply:
+        logging.warning("Gemini returned empty response for user %s", username)
         return jsonify({"error": "Chat service unavailable"}), 502
 
     final_reply = ensure_ai_disclaimer(reply)
