@@ -99,6 +99,45 @@ All data API routes require an authenticated session cookie.
    ```
 6. Open `http://localhost:3000`.
 
+## Docker
+
+Build the image:
+
+```bash
+docker build -t insiteful-mind .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e UPSTASH_REDIS_REST_URL=your_redis_url \
+  -e UPSTASH_REDIS_REST_TOKEN=your_redis_token \
+  -e GOOGLE_CLIENT_ID=your_google_oauth_client_id \
+  -e FLASK_SECRET_KEY=your_random_secret \
+  -e COOKIE_SECURE=false \
+  -e PORT=3000 \
+  insiteful-mind
+```
+
+Then open `http://localhost:3000`.
+
+Or run with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Compose reads environment variables from your shell or a local `.env` file in the project root.  
+At minimum, set:
+
+```env
+UPSTASH_REDIS_REST_URL=your_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_redis_token
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+FLASK_SECRET_KEY=your_random_secret
+```
+
 ## Testing
 
 Test files:

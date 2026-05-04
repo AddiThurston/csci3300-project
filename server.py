@@ -16,7 +16,8 @@ from upstash_redis import Redis
 load_dotenv() # load the environment variables from the .env file
 
 app = Flask(__name__, static_folder=".")
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", os.urandom(32))
+# Treat empty env values as unset so sessions still work in dev/compose.
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or os.urandom(32)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
@@ -47,8 +48,6 @@ def get_ai_client():
 
     api_key = (
         os.environ.get("GEMINI_API_KEY")
-        or os.environ.get("GOOGLE_API_KEY")
-        or os.environ.get("GOOGLE_GENAI_API_KEY")
     )
     if not api_key:
         return None
@@ -703,5 +702,7 @@ def get_shared_checkins():
 
 
 if __name__ == "__main__":
+    host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", 3000))
-    app.run(port=port, debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host=host, port=port, debug=debug)

@@ -561,6 +561,24 @@ header.top-bar {
     line-height: 1.45;
 }
 
+/* Lighter themes need softer questionnaire surfaces */
+:root[data-theme="light"] .questionnaire-question,
+:root[data-theme="meadow"] .questionnaire-question {
+    background: var(--control-bg-soft);
+}
+
+:root[data-theme="light"] .questionnaire-option,
+:root[data-theme="meadow"] .questionnaire-option {
+    background: var(--control-bg);
+    color: var(--control-text);
+}
+
+:root[data-theme="light"] .questionnaire-metric,
+:root[data-theme="meadow"] .questionnaire-metric {
+    background: var(--control-bg-soft);
+    border-color: var(--line);
+}
+
 @media (max-width: 900px) {
     .questionnaire-layout {
         grid-template-columns: 1fr;
