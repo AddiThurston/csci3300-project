@@ -602,6 +602,7 @@ def get_questionnaires():
 
 @app.post("/api/gemini")
 def get_ai_insight():
+    print(os.environ.get("GEMINI_API_KEY"))
     username = get_username()
     if not username:
         return jsonify(AUTH_REQUIRED_ERROR), 401

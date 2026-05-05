@@ -544,27 +544,30 @@
                     <div>
                         <div class="trends-kicker">Mood analytics</div>
                         <h1>Track how your mood fluctuates over time.</h1>
+                        <p id="sharedTrendsNote" class="chart-placeholder-note" style="margin-top:8px;display:none;">
+                            Shared trends currently include three-word check-ins only.
+                        </p>
                     </div>
                 </div>
 
                 <section class="metrics-grid">
                     <article class="metric-card">
-                        <p class="metric-label">Average mood</p>
+                        <p class="metric-label" id="metricLabelAvg">Average mood</p>
                         <p class="metric-value" id="avgMood">--</p>
                         <p class="metric-detail" id="avgMoodDetail">This will update as you add more check-ins.</p>
                     </article>
                     <article class="metric-card">
-                        <p class="metric-label">Total check-ins</p>
+                        <p class="metric-label" id="metricLabelCount">Total check-ins</p>
                         <p class="metric-value" id="checkinCount">0</p>
                         <p class="metric-detail" id="checkinCountDetail">Build a clearer picture by checking in regularly.</p>
                     </article>
                     <article class="metric-card" id="trendCard">
-                        <p class="metric-label">Weekly direction</p>
+                        <p class="metric-label" id="metricLabelWeekly">Weekly direction</p>
                         <p class="metric-value" id="trendValue">--</p>
                         <p class="metric-detail" id="trendDirection">Need at least 14 check-ins for a weekly comparison.</p>
                     </article>
                     <article class="metric-card">
-                        <p class="metric-label">Range</p>
+                        <p class="metric-label" id="metricLabelRange">Range</p>
                         <p class="metric-value" id="bestWorst">--</p>
                         <p class="metric-detail" id="bestWorstDetail">Your highest and lowest mood scores will appear here.</p>
                     </article>
@@ -573,16 +576,15 @@
                 <article class="trend-card">
                     <div class="chart-card-header">
                         <div>
-                            <h2>Mood Over Time</h2>
-                            <p class="trend-card-subtitle">Track your recorded mood score across recent check-ins.</p>
+                            <h2 id="chartTitle">Mood Over Time</h2>
+                            <p class="trend-card-subtitle" id="chartSubtitle">Track your recorded mood score across recent check-ins.</p>
                         </div>
                         <div class="chart-controls">
-                            <label for="chartMode">Display by</label>
-                            <select id="chartMode" class="chart-select" disabled>
-                                <option value="score" selected>Mood score</option>
-                                <option value="label">Mood label (coming soon)</option>
+                            <label for="trendsDataSource">View</label>
+                            <select id="trendsDataSource" class="chart-select" aria-label="Choose three-word or questionnaire trends">
+                                <option value="checkin" selected>Three-Word Reflection</option>
+                                <option value="questionnaire">Questionnaire</option>
                             </select>
-                            <p class="chart-placeholder-note">Display by feature will be available soon.</p>
                         </div>
                     </div>
                     <div class="chart-frame" id="chartFrame">
@@ -592,8 +594,8 @@
 
                 <article class="trend-card emotions-card">
                     <div>
-                        <h2>Top Emotions</h2>
-                        <p class="trend-card-subtitle">The words that appear most often in your check-ins.</p>
+                        <h2 id="secondaryCardTitle">Top Emotions</h2>
+                        <p class="trend-card-subtitle" id="secondaryCardSubtitle">The words that appear most often in your check-ins.</p>
                     </div>
                     <ul class="emotion-list" id="topWords"></ul>
                 </article>
@@ -688,9 +690,27 @@
     </div>
 
     <script type="module">
+        /** Labels for questionnaire dimension averages (must match server QUESTIONNAIRE_QUESTIONS ids). */
+        const QUESTION_META = [
+            { id: "mood", label: "Mood" },
+            { id: "sleep", label: "Sleep" },
+            { id: "energy", label: "Energy" },
+            { id: "calm", label: "Calm" },
+            { id: "connection", label: "Connection" },
+            { id: "motivation", label: "Motivation" },
+            { id: "focus", label: "Focus" },
+            { id: "responsibilities", label: "Responsibilities" },
+            { id: "hope", label: "Hope" },
+            { id: "anxiety_free", label: "Freedom from anxiety" },
+            { id: "progress", label: "Progress" },
+            { id: "physical", label: "Physical health" },
+            { id: "grounded", label: "Grounded" },
+        ];
+
         const topWordsList = document.getElementById("topWords");
         const chartFrame = document.getElementById("chartFrame");
         const trendCard = document.getElementById("trendCard");
+        const trendsDataSource = document.getElementById("trendsDataSource");
         const themeVars = getComputedStyle(document.body);
         const chartTextColor = themeVars.getPropertyValue("--text").trim() || "#e9f0ff";
         const chartMutedColor = themeVars.getPropertyValue("--muted").trim() || "#9cb0d2";
@@ -707,12 +727,22 @@
         if (isViewMode) {
             document.getElementById("viewBanner").style.display = "flex";
             document.getElementById("viewBannerOwner").textContent = viewOwner;
+            document.getElementById("sharedTrendsNote").style.display = "block";
+            trendsDataSource.value = "checkin";
+            trendsDataSource.disabled = true;
+            const qOpt = trendsDataSource.querySelector('option[value="questionnaire"]');
+            if (qOpt) qOpt.disabled = true;
         } else {
+            trendsDataSource.disabled = false;
             document.getElementById("sharePanel").style.display = "grid";
             loadShareList();
             loadSharedWithMe();
             document.getElementById("shareGrantBtn").addEventListener("click", grantAccess);
         }
+
+        trendsDataSource.addEventListener("change", () => {
+            renderCurrentView();
+        });
 
         // Modal close on X or clicking outside
         const modalOverlay = document.getElementById("trendsModalOverlay");
@@ -830,6 +860,260 @@
 
         let moodChart = null;
         let loadedCheckins = [];
+        let cachedCheckins = [];
+        let cachedQuestionnaires = [];
+
+        function getTrendsMode() {
+            return trendsDataSource.value;
+        }
+
+        function averageResponses(responses) {
+            const vals = Object.values(responses || {}).filter((v) => typeof v === "number");
+            if (!vals.length) return null;
+            return vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
+
+        function setMetricLabelsCheckin() {
+            document.getElementById("metricLabelAvg").textContent = "Average mood";
+            document.getElementById("metricLabelCount").textContent = "Total check-ins";
+            document.getElementById("metricLabelWeekly").textContent = "Weekly direction";
+            document.getElementById("metricLabelRange").textContent = "Range";
+        }
+
+        function setMetricLabelsQuestionnaire() {
+            document.getElementById("metricLabelAvg").textContent = "Average score (1–5)";
+            document.getElementById("metricLabelCount").textContent = "Questionnaires";
+            document.getElementById("metricLabelWeekly").textContent = "Weekly direction";
+            document.getElementById("metricLabelRange").textContent = "Range (low / high avg)";
+        }
+
+        function renderCurrentView() {
+            if (getTrendsMode() === "questionnaire") {
+                if (isViewMode) return;
+                renderQuestionnaireDashboard(cachedQuestionnaires);
+            } else {
+                renderDashboard(cachedCheckins);
+            }
+        }
+
+        function weakestQuestionnaireDimensions(entries) {
+            const sums = {};
+            const counts = {};
+            QUESTION_META.forEach(({ id }) => {
+                sums[id] = 0;
+                counts[id] = 0;
+            });
+            entries.forEach((e) => {
+                QUESTION_META.forEach(({ id }) => {
+                    const v = e.responses?.[id];
+                    if (typeof v === "number") {
+                        sums[id] += v;
+                        counts[id] += 1;
+                    }
+                });
+            });
+            return QUESTION_META.map(({ id, label }) => ({
+                label,
+                avg: counts[id] ? sums[id] / counts[id] : null,
+            }))
+                .filter((x) => x.avg !== null)
+                .sort((a, b) => a.avg - b.avg)
+                .slice(0, 5);
+        }
+
+        function renderQuestionnaireDashboard(entries) {
+            setMetricLabelsQuestionnaire();
+            document.getElementById("chartTitle").textContent = "Questionnaire average over time";
+            document.getElementById("chartSubtitle").textContent =
+                "Each point is the average of all 13 ratings for that submission (1–5 scale).";
+            document.getElementById("secondaryCardTitle").textContent = "Areas to watch";
+            document.getElementById("secondaryCardSubtitle").textContent =
+                "Dimensions with the lowest average scores across your saved questionnaires.";
+            loadedCheckins = [];
+
+            const sorted = [...entries]
+                .map((e) => ({ ...e, _avg: averageResponses(e.responses) }))
+                .filter((e) => e._avg != null)
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            topWordsList.innerHTML = "";
+            chartFrame.innerHTML = `<canvas id="moodChart"></canvas>`;
+
+            if (sorted.length === 0) {
+                trendCard.classList.remove("trend-up", "trend-down", "trend-flat");
+                document.getElementById("avgMood").textContent = "--";
+                document.getElementById("avgMoodDetail").textContent =
+                    "Complete a guided questionnaire from the dashboard to see trends here.";
+                document.getElementById("checkinCount").textContent = "0";
+                document.getElementById("checkinCountDetail").textContent =
+                    "Your questionnaire history will appear here.";
+                document.getElementById("trendValue").textContent = "--";
+                document.getElementById("trendDirection").textContent =
+                    "Need at least 14 questionnaires for a weekly comparison.";
+                document.getElementById("bestWorst").textContent = "--";
+                document.getElementById("bestWorstDetail").textContent =
+                    "Lowest and highest average scores will appear here.";
+                chartFrame.innerHTML = `
+                    <div class="empty-state">
+                        <strong>No questionnaires yet</strong>
+                        <p>Save a guided questionnaire to see how your averages change over time.</p>
+                    </div>
+                `;
+                topWordsList.innerHTML = `
+                    <li class="emotion-chip">
+                        <span>No data yet</span>
+                        <span class="emotion-count">—</span>
+                    </li>
+                `;
+                if (moodChart) {
+                    moodChart.destroy();
+                    moodChart = null;
+                }
+                return;
+            }
+
+            const moodData = sorted.map((e) => ({
+                date: formatDate(e.timestamp),
+                avg: e._avg,
+            }));
+
+            const avgAll = sorted.reduce((s, e) => s + e._avg, 0) / sorted.length;
+            const avgs = sorted.map((e) => e._avg);
+            const best = Math.max(...avgs);
+            const worst = Math.min(...avgs);
+
+            document.getElementById("avgMood").textContent = avgAll.toFixed(2);
+            document.getElementById("avgMoodDetail").textContent =
+                avgAll >= 4
+                    ? "Your averages suggest things are generally going well."
+                    : avgAll >= 3
+                        ? "Your averages look mixed—worth noticing patterns."
+                        : "Your averages suggest a difficult stretch overall.";
+
+            document.getElementById("checkinCount").textContent = String(sorted.length);
+            document.getElementById("checkinCountDetail").textContent =
+                `From ${moodData[0].date} to ${moodData[moodData.length - 1].date}`;
+
+            document.getElementById("bestWorst").textContent = `${worst.toFixed(2)} / ${best.toFixed(2)}`;
+            document.getElementById("bestWorstDetail").textContent =
+                `Lowest average ${worst.toFixed(2)}, highest average ${best.toFixed(2)}.`;
+
+            trendCard.classList.remove("trend-up", "trend-down", "trend-flat");
+            if (sorted.length >= 14) {
+                const last7 = sorted.slice(-7);
+                const prev7 = sorted.slice(-14, -7);
+                const average = (arr) => arr.reduce((s, e) => s + e._avg, 0) / arr.length;
+                const diff = average(last7) - average(prev7);
+                let trendLabel = "Stable";
+                let trendText = "Your last 7 questionnaires are fairly steady compared with the previous 7.";
+                let trendClass = "trend-flat";
+                if (diff > 0.05) {
+                    trendLabel = "Improving";
+                    trendText = `Last 7 averages improved by ${diff.toFixed(2)} vs the previous 7.`;
+                    trendClass = "trend-up";
+                } else if (diff < -0.05) {
+                    trendLabel = "Declining";
+                    trendText = `Last 7 averages dipped by ${Math.abs(diff).toFixed(2)} vs the previous 7.`;
+                    trendClass = "trend-down";
+                }
+                trendCard.classList.add(trendClass);
+                document.getElementById("trendValue").textContent = trendLabel;
+                document.getElementById("trendDirection").textContent = trendText;
+            } else {
+                document.getElementById("trendValue").textContent = "--";
+                document.getElementById("trendDirection").textContent =
+                    "Need at least 14 questionnaires for a weekly comparison.";
+            }
+
+            const weak = weakestQuestionnaireDimensions(sorted);
+            weak.forEach(({ label, avg }) => {
+                const li = document.createElement("li");
+                li.className = "emotion-chip";
+                li.innerHTML = `<span>${label}</span><span class="emotion-count">${avg.toFixed(2)}</span>`;
+                topWordsList.appendChild(li);
+            });
+
+            const ctx = document.getElementById("moodChart").getContext("2d");
+            const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+            gradient.addColorStop(0, "rgba(103, 240, 255, 0.35)");
+            gradient.addColorStop(1, "rgba(103, 240, 255, 0.02)");
+            if (moodChart) {
+                moodChart.destroy();
+            }
+
+            moodChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: moodData.map((entry) => entry.date),
+                    datasets: [{
+                        label: "Average (1–5)",
+                        data: moodData.map((entry) => entry.avg),
+                        fill: true,
+                        backgroundColor: gradient,
+                        borderColor: "#67f0ff",
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: "#f6f9ff",
+                        pointBorderColor: "#67f0ff",
+                        pointBorderWidth: 2,
+                        tension: 0.35,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: chartTextColor,
+                            },
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title(tooltipItems) {
+                                    const point = sorted[tooltipItems[0].dataIndex];
+                                    return formatLongDate(point.timestamp);
+                                },
+                                label(context) {
+                                    const point = sorted[context.dataIndex];
+                                    return `Average: ${point._avg.toFixed(2)} / 5`;
+                                },
+                                afterLabel(context) {
+                                    const point = sorted[context.dataIndex];
+                                    const m = point.responses?.mood;
+                                    if (typeof m === "number") {
+                                        return `Mood rating: ${m}/5`;
+                                    }
+                                    return "";
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: chartMutedColor,
+                            },
+                            grid: {
+                                color: "rgba(156, 176, 210, 0.1)",
+                            },
+                        },
+                        y: {
+                            min: 1,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1,
+                                color: chartMutedColor,
+                            },
+                            grid: {
+                                color: "rgba(156, 176, 210, 0.1)",
+                            },
+                        },
+                    },
+                },
+            });
+        }
 
         function authHeaders() {
             return {
@@ -947,6 +1231,13 @@
         function resetDashboard() {
             trendCard.classList.remove("trend-up", "trend-down", "trend-flat");
             loadedCheckins = [];
+            setMetricLabelsCheckin();
+            document.getElementById("chartTitle").textContent = "Mood Over Time";
+            document.getElementById("chartSubtitle").textContent =
+                "Track your recorded mood score across recent check-ins.";
+            document.getElementById("secondaryCardTitle").textContent = "Top Emotions";
+            document.getElementById("secondaryCardSubtitle").textContent =
+                "The words that appear most often in your check-ins.";
             document.getElementById("avgMood").textContent = "--";
             document.getElementById("avgMoodDetail").textContent = "We will calculate this as soon as check-ins appear.";
             document.getElementById("checkinCount").textContent = "0";
@@ -974,6 +1265,13 @@
         }
 
         function renderDashboard(checkins) {
+            setMetricLabelsCheckin();
+            document.getElementById("chartTitle").textContent = "Mood Over Time";
+            document.getElementById("chartSubtitle").textContent =
+                "Track your recorded mood score across recent check-ins.";
+            document.getElementById("secondaryCardTitle").textContent = "Top Emotions";
+            document.getElementById("secondaryCardSubtitle").textContent =
+                "The words that appear most often in your check-ins.";
             loadedCheckins = Array.isArray(checkins) ? [...checkins] : [];
             const sortedCheckins = [...checkins].sort((a, b) => a.timestamp - b.timestamp);
 
@@ -1159,20 +1457,36 @@
 
         async function loadTrends() {
             try {
-                const url = isViewMode
-                    ? `/api/trends/shared-checkins?owner=${encodeURIComponent(viewOwner)}`
-                    : "/api/checkin";
-                const response = await fetch(url, { method: "GET", headers: authHeaders() });
+                if (isViewMode) {
+                    const url = `/api/trends/shared-checkins?owner=${encodeURIComponent(viewOwner)}`;
+                    const response = await fetch(url, { method: "GET", headers: authHeaders() });
 
-                if (response.status === 403) {
-                    chartFrame.innerHTML = `<div class="empty-state"><strong>Access Denied</strong><p>You have not been granted access to this person's trends. Ask them to share it with your Google account email.</p></div>`;
+                    if (response.status === 403) {
+                        chartFrame.innerHTML = `<div class="empty-state"><strong>Access Denied</strong><p>You have not been granted access to this person's trends. Ask them to share it with your Google account email.</p></div>`;
+                        return;
+                    }
+                    if (!response.ok) throw new Error("Failed to load check-ins");
+
+                    const data = await response.json();
+                    cachedCheckins = Array.isArray(data) ? data : [];
+                    cachedQuestionnaires = [];
+                    renderCurrentView();
                     return;
                 }
+
+                const [response, qResponse] = await Promise.all([
+                    fetch("/api/checkin", { method: "GET", headers: authHeaders() }),
+                    fetch("/api/questionnaire", { method: "GET", headers: authHeaders() }),
+                ]);
+
                 if (!response.ok) throw new Error("Failed to load check-ins");
+                if (!qResponse.ok) throw new Error("Failed to load questionnaires");
 
                 const data = await response.json();
-                const checkins = Array.isArray(data) ? data : Array.isArray(data.entries) ? data.entries : [];
-                renderDashboard(checkins);
+                const qData = await qResponse.json();
+                cachedCheckins = Array.isArray(data) ? data : Array.isArray(data.entries) ? data.entries : [];
+                cachedQuestionnaires = Array.isArray(qData) ? qData : [];
+                renderCurrentView();
             } catch {
                 resetDashboard();
             }
