@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="InSiteful Mind">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5f8cff"/>
+      <stop offset="1" stop-color="#67f0ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#g)"/>
+  <path
+    d="M7.5 19.5c3.2-3.5 5.3-3.5 8.5 0s5.3 3.5 8.5 0"
+    fill="none"
+    stroke="#f6f9ff"
+    stroke-width="2.1"
+    stroke-linecap="round"
+  />
+  <path
+    d="M7.5 12.5c3.2-2.8 5.3-2.8 8.5 0s5.3 2.8 8.5 0"
+    fill="none"
+    stroke="#f6f9ff"
+    stroke-width="2.1"
+    stroke-linecap="round"
+    opacity="0.9"
+  />
+</svg>
