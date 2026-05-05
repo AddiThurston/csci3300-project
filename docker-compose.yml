@@ -3,16 +3,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: insiteful-mind:local
+    image: addithurston/insiteful-mind:latest
     container_name: insiteful-mind-web
     ports:
       - "3000:3000"
     environment:
       HOST: 0.0.0.0
       PORT: 3000
-      FLASK_DEBUG: ${FLASK_DEBUG:-false}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-local-dev-secret-change-me}
       UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
       UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
       GOOGLE_CLIENT_ID: "367361204794-1s7mqntr4fq14l0i8thpn7t7gb3gb08s.apps.googleusercontent.com"

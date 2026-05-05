@@ -1,78 +1,101 @@
-USE CI FOR:
-UI Automation Test Cases
-Smoke Test cases
-Flaky Test cases
-Pytest cases
-
 # InSiteful Mind
 
-InSiteful Mind is a Flask + Upstash Redis web app for lightweight mental-health reflection.
-The current build supports journal entries and three-word reflections, with placeholder pages
-for the questionnaire and trends dashboard.
+**Live site:** [http://insite.addithurston.com](http://insite.addithurston.com)
+
+InSiteful Mind is a Flask + Upstash Redis web app for guided reflection and mood tracking. Google Sign-In scopes data per user; journal entries, check-ins, questionnaire history, and trends are stored in Redis. **The project is feature-complete** (journal, three-word reflection, full questionnaire check-in, trends with charts, multiple UI themes, optional Gemini insights, and private trends sharing). A **Docker** image is supported for deployment.
 
 **Team:** David Pan, Kysen Krishnaswamy, Addison Thurston, Prabhnoor Singh
 
-## Current Project State
+## Current project state
 
-### Implemented
-- Journal flow: create, list, search, date-filter, and delete entries
-- Three-word reflection flow: mood slider, up to 3 words, save, and recent history view
-- Flask API with Redis-backed per-user data
+**Status:** All planned features for this course build are implemented and the app is deployed in production at the URL above.
 
+### Features
 
-### In Progress / Placeholder
-- `check-in.html` is still a questionnaire placeholder
-- `trends.html` and `index.html` are placeholder/dashboard shells
-- AI-powered feedback/advice is not yet implemented
-- Additional production hardening for auth/session lifecycle
+- **Auth:** Google Identity Services on the client, session cookies on the server (`HttpOnly`, `SameSite=Lax`)
+- **Journal:** Create, list, search, date filter, delete; optional Gemini side panel for pattern questions
+- **Three-word reflection:** Mood slider, word bank, save, and history
+- **Guided check-in (questionnaire):** Full 1–5 scale questionnaire on `check-in.html` with per-entry history
+- **Trends:** Mood over time (Chart.js), summary metrics, top words; **share trends** with specific Google accounts (email-based access)
+- **Themes:** Multiple themes (e.g. light, dark, meadow, forest, twilight) via `settings.html` and `theme-early.js`
+- **AI (Gemini):** Server-side `/api/gemini` using recent journal, check-ins, and questionnaire context (requires API key in env)
+- **Docker:** `Dockerfile` and `docker-compose.yml` for containerized runs
 
 ## Pages
 
-- `login.html` - Google sign-in UI and client-side credential parsing
-- `index.html` - dashboard placeholder and navigation hub
-- `journal.html` - journal entry UI (create/search/filter/delete)
-- `three-word-reflection.html` - mood slider + word selection + history panel
-- `check-in.html` - placeholder for guided questionnaire flow
-- `trends.html` - placeholder for trend analytics
+- `login.html` — Google sign-in
+- `index.html` — Dashboard / navigation hub (bubble UI)
+- `journal.html` — Journal entries + Gemini drawer
+- `three-word-reflection.html` — Mood + three-word flow + Gemini
+- `check-in.html` — Guided questionnaire + history
+- `trends.html` — Charts, metrics, sharing, shared-with-you + Gemini
+- `settings.html` — Theme selection
 
-## Backend and Data Model
+## Backend and data model
 
-The backend is in `server.py` and serves both static files and API routes.
+The backend is `server.py`; static assets and HTML are served from the repo root.
 
-- Journal entries are stored in Redis hash keys: `journal:{username}`
-- Reflection check-ins are stored in Redis hash keys: `checkin:{username}`
-- User scoping is done with backend session cookies after Google sign-in
+- Journal: Redis hash `journal:{username}`
+- Three-word / mood check-ins: `checkin:{username}`
+- Questionnaire responses: `questionnaire:{username}`
+- Trends sharing: Redis sets for grants and “shared with me” lookups
 
-Session cookies are signed by Flask and marked `HttpOnly` and `SameSite=Lax`.
+## API endpoints (authenticated unless noted)
 
-## API Endpoints
+**Auth**
 
-All data API routes require an authenticated session cookie.
+- `POST /api/auth/google` — verify Google credential, create session
+- `GET /api/auth/session` — current session
+- `POST /api/auth/logout` — clear session
 
-- `POST /api/auth/google` - verify Google credential and create session
-- `GET /api/auth/session` - validate current session
-- `POST /api/auth/logout` - clear session cookie
+**Journal**
 
-- `GET /api/entries` - list all journal entries (newest first)
-- `POST /api/entries` - create journal entry (`content` required, `title` optional)
-- `DELETE /api/entries/<entry_id>` - delete one journal entry
-- `GET /api/checkin` - list check-ins (supports `?limit=<positive-int>`)
-- `POST /api/checkin` - create check-in (`words` 1-3, `moodScore`, `moodLabel`)
-- `DELETE /api/checkin/<checkin_id>` - delete one check-in
+- `GET /api/entries` — list entries (newest first)
+- `POST /api/entries` — create entry (`content` required, `title` optional)
+- `DELETE /api/entries/<entry_id>` — delete entry
 
-## Setup
+**Check-ins (three-word)**
+
+- `GET /api/checkin` — list (optional `?limit=`)
+- `POST /api/checkin` — create (`words` 1–3, `moodScore`, `moodLabel`)
+- `DELETE /api/checkin/<checkin_id>` — delete
+
+**Questionnaire**
+
+- `GET /api/questionnaire` — list responses
+- `POST /api/questionnaire` — save one full questionnaire response
+
+**AI**
+
+- `POST /api/gemini` — Gemini insight (uses server-side history for the signed-in user)
+
+**Trends sharing**
+
+- `POST /api/trends/share` — grant access by email
+- `DELETE /api/trends/share` — revoke access
+- `GET /api/trends/shares` — list viewers you granted
+- `GET /api/trends/shared-with-me` — list owners who shared with you
+- `GET /api/trends/shared-checkins?owner=email` — viewer fetch (if granted)
+
+## Setup (local)
 
 ### Prerequisites
-- Python 3.x
-- Upstash Redis credentials
+
+- Python 3.11+ recommended (matches CI / Docker; `google-genai` needs 3.9+)
+- Upstash Redis REST URL + token
+- Google OAuth client ID (and Gemini API key if you use AI)
 
 ### Installation
+
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/AddiThurston/csci3300-project.git
    cd csci3300-project
    ```
+
 2. Create and activate a virtual environment:
+
    ```bash
    python -m venv venv
    # Windows (PowerShell)
@@ -80,23 +103,31 @@ All data API routes require an authenticated session cookie.
    # macOS/Linux
    source venv/bin/activate
    ```
+
 3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
-4. Create `.env` in project root:
+
+4. Create `.env` in the project root (example):
+
    ```env
-  UPSTASH_REDIS_REST_URL=your_redis_url
-  UPSTASH_REDIS_REST_TOKEN=your_redis_token
-  GOOGLE_CLIENT_ID=your_google_oauth_client_id
-  FLASK_SECRET_KEY=your_random_secret
-  COOKIE_SECURE=false
-  PORT=3000
+   UPSTASH_REDIS_REST_URL=your_redis_url
+   UPSTASH_REDIS_REST_TOKEN=your_redis_token
+   GOOGLE_CLIENT_ID=your_google_oauth_client_id
+   FLASK_SECRET_KEY=your_random_secret
+   GEMINI_API_KEY=your_gemini_api_key
+   COOKIE_SECURE=false
+   PORT=3000
    ```
+
 5. Start the app:
+
    ```bash
    python server.py
    ```
+
 6. Open `http://localhost:3000`.
 
 ## Docker
@@ -115,6 +146,7 @@ docker run --rm -p 3000:3000 \
   -e UPSTASH_REDIS_REST_TOKEN=your_redis_token \
   -e GOOGLE_CLIENT_ID=your_google_oauth_client_id \
   -e FLASK_SECRET_KEY=your_random_secret \
+  -e GEMINI_API_KEY=your_gemini_api_key \
   -e COOKIE_SECURE=false \
   -e PORT=3000 \
   insiteful-mind
@@ -122,36 +154,36 @@ docker run --rm -p 3000:3000 \
 
 Then open `http://localhost:3000`.
 
-Or run with Docker Compose:
+### Docker Compose
+
+From this directory:
 
 ```bash
 docker compose up --build
 ```
 
-Compose reads environment variables from your shell or a local `.env` file in the project root.  
-At minimum, set:
+Compose loads variables from a local `.env` if present. Set at least Redis and secrets (and `GEMINI_API_KEY` if you use AI).
 
-```env
-UPSTASH_REDIS_REST_URL=your_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_redis_token
-GOOGLE_CLIENT_ID=your_google_oauth_client_id
-FLASK_SECRET_KEY=your_random_secret
+To push the built image to Docker Hub, use a **full image name** `yourdockerhubuser/repo:tag`, then:
+
+```bash
+docker login
+docker compose build
+docker compose push
 ```
 
 ## Testing
 
 Test files:
-- `test_journal.py` - journal API behavior tests
-- `test_three.py` - three-word/check-in API behavior tests
-- `test_redis.py` - Redis integration checks
+
+- `test_journal.py` — journal API
+- `test_three.py` — check-in API
+- `test_questionnaire.py` — questionnaire API
+- `test_redis.py` — Redis helpers
+- `test_chat_agent.py` — Gemini / `/api/gemini` contract tests
 
 Run all tests:
+
 ```bash
 pytest -q
 ```
-
-## Near-Term Roadmap
-
-- Implement full questionnaire flow on `check-in.html`
-- Build trends visualizations on `trends.html`
-- Add AI-assisted journal insights once backend auth/data flows are finalized
